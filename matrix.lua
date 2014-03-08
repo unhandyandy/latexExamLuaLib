@@ -1,5 +1,6 @@
 
 local vec = require('vector')
+local frc = require('fraction')
 
 local matrix = {}
 matrix.__index = matrix
@@ -18,6 +19,12 @@ function matrix:getDim()
    return table.unpack( self.dim )
 end
 
+function matrix:setDim( r, c )
+   self.dim = { r, c }
+end
+
+
+
 function matrix.zero( r, c )
    local m = {}
    for i = 1, r do
@@ -31,8 +38,8 @@ function matrix.ismatrix( m )
 end
 
 function matrix:__tostring( parensQ )
-   parensQ = parensQ or true
-   local endline = [[\n]]
+   if parensQ == nil then parensQ = true end
+   local endline = '\n'
    if not parensQ then endline = [[\\ ]] .. endline end
    local str = ''
    for _, v in ipairs( self ) do
@@ -101,9 +108,9 @@ end
 
 
 function matrix.__mul(a,b)
-   if type(a) == "number" and matrix.ismatrix(b) then
+   if ( type(a) == "number" or frc.isfraction(a) ) and matrix.ismatrix(b) then
       return scalarMult( a, b )
-   elseif type(b) == "number" and matrix.ismatrix(a) then
+   elseif ( type(b) == "number" or frc.isfraction(b) ) and matrix.ismatrix(a) then
       return scalarMult( b, a )
    else
       assert(matrix.ismatrix(a) and matrix.ismatrix(b), "Mul: wrong argument types (<matrix> or <number> expected)")
@@ -126,10 +133,11 @@ function matrix.__eq(a,b)
 end
 
 
-function matrix.random( r, c, max )
+function matrix.random( r, c, max, sgnF )
+   --print( '\n sgnF = ' .. ifset(sgnF,'true','false') .. '\n' )
    local lst = {}
    for i = 1, r do
-      table.insert( lst, vec.random( c, max ) )
+      table.insert( lst, vec.random( c, max, sgnF ) )
    end
    return matrix.new( lst )
 end
@@ -184,13 +192,6 @@ function matrix.transpose( m )
    return matrix.new( res )
 end
 
-function matrix.random( r, c, max )
-   local lst = {}
-   for i = 1, r do
-      table.insert( lst, vec.random( c, max ) )
-   end
-   return matrix.new( lst )
-end
 
 function matrix:removeRow( r )
    local res = self:clone()
@@ -229,21 +230,77 @@ function matrix:determinant()
    return col1 * mins
 end
 
-function matrix:tolatex()
+function matrix:inverse()
+   --print( '\n inverting...' )
+   local det = self:determinant()
+   local r, c = self:getDim()
+   assert( det ~= 0 and r == c, "Matrix is not invertible!" )
+   local res = matrix.zero(r,r)
+   for i = 1,r do
+      for j = 1,r do
+	 res[j][i] = (-1)^(i+j) * self:minor(i,j):determinant()
+      end 
+   end 
+   --print( '...done \n' )
+   return frc.one() / det * res
+end 
+
+function matrix:tolatex( augmented )
+   if augmented == nil then augmented = false end
    local tmpl = [[\begin{bmat}{%s}
 %s
 \end{bmat} ]]
    local r, c = self:getDim()
-   local cols = createBlankList( c, 'c' )
-   cols = table.concat( cols )
+   local cols = string.rep( 'c', c - 1 )
+   if augmented then cols = cols .. '|' end
+   cols = cols .. 'c'
+   --cols = table.concat( cols )
    --local matstr = self:__tostring( false )
    local matstr = {}
    for i = 1, r do
-      table.insert( matstr, table.concat( self[i], ' & ' ) )
+      local selfstr = map( self[i], mathToStr )
+      table.insert( matstr, table.concat( selfstr, ' & ' ) )
    end 
    matstr = table.concat( matstr, [[ \\ ]] )
    return string.format( tmpl, cols, matstr )
 end
+
+function matrix:hasZeros()
+   local r,c = self:getDim()
+   for i = 1,r do
+      for j = 1,c do
+	 if self[ i ][ j ] == 0 then
+	    return true
+	 end 
+      end 
+   end 
+   return false
+end
+
+function matrix:isregular( n )
+   local r = self:getDim()
+   n = n or 0
+   if self:hasZeros() then
+      if n > r  then
+	 return false
+      else
+	 return (self*self):isregular( n + 1 )
+      end 
+   else 
+      return true
+   end 
+end
+
+function matrix:tonumbers()
+   local res = self:clone()
+   local r, c = self:getDim()
+   for i = 1,r do
+      for j = 1,c do
+	 if frc.isfraction( self[ i ][ j ] ) then
+	    res[ i ][ j ] = self[ i ][ j ]:tonumber()
+	 end end end
+   return res
+end 
 
 
 
@@ -259,6 +316,7 @@ function matrix.new( lst )
    res.dim = vec.new( { #lst, #lst[1] } )
    return setmetatable( res, matrix)
 end
+
 
 return matrix
 

@@ -2,6 +2,12 @@
 local fraction = {}
 fraction.__index = fraction
 
+function gcf( x, y )
+   if x > y then return gcf( y, x ) end
+   if x == 0 then return y end
+   return gcf( y % x, x )
+end
+
 local function checkFraction( fr )
    local check =  fr.denom ~= 0 and fr.numer == math.floor( fr.numer ) and fr.denom == math.floor( fr.denom )
    assert( check, 'Fraction check failed!' )
@@ -16,14 +22,18 @@ function fraction.isfraction( m )
    return getmetatable( m ) == fraction 
 end
 
+function fraction:tonumber()
+   return self.sign * self.numer / self.denom
+end
+
 function fraction:__tostring()
-   local sgn = ''
-   if self.sign < 0 then sgn = '-' end
+   local sgn = coeffToStr( self.sign )
    if self.numer == 0 then 
       return '0' 
    elseif self.denom == 1 then
       return string.format( '%s%d', sgn, self.numer )
    else
+      --print( '\n numer = ' .. self.numer .. '\n' )
       return string.format( '%s%d/%d', sgn, self.numer, self.denom )
    end
 end
@@ -37,6 +47,31 @@ function fraction.__unm( fr )
    res.sign = -res.sign
    return res
 end
+
+function fraction.__lt ( a, b )
+   if fraction.isfraction( a ) then
+      if fraction.isfraction( b ) then
+	 return a:tonumber() < b:tonumber()
+      else
+	 return a:tonumber() < b
+      end 
+   else 
+      return a < b:tonumber()
+   end 
+end
+
+function fraction.__le ( a, b )
+   if fraction.isfraction( a ) then
+      if fraction.isfraction( b ) then
+	 return a:tonumber() <= b:tonumber()
+      else
+	 return a:tonumber() <= b
+      end 
+   else 
+      return a <= b:tonumber()
+   end 
+end
+
 
 local function addFractions( f1, f2 )
    local newdenom = f1.denom * f2.denom
@@ -67,16 +102,15 @@ local function multFractions( f1, f2 )
 end
 
 function fraction.__mul( f1, f2 )
-     if fraction.isfraction( f1 ) then
+   if fraction.isfraction( f1 ) then
       if fraction.isfraction( f2 ) then
 	 return multFractions( f1, f2 )
-      else
+      elseif type( f2 ) == 'number' then
 	 local newfr = fraction.new( f2, 1 )
 	 return multFractions( f1, newfr )
-      end
-   else 
-      return fraction.__mul( f2, f1 )
-   end
+      end 
+   end 
+   return f2 * f1 
 end
 
 function fraction.invert( fr )
@@ -105,12 +139,23 @@ function fraction.__pow( fr, p )
 end
 
 function fraction:tolatex()
+   local sgn = coeffToStr( self.sign )
+   --print( '\n sgn = ' .. sgn .. '\n' )
    if self.numer ~= 0 and self.denom ~= 1 then
-      local tmpl = [[\frac{%s}{%s}]]
-      return string.format( tmpl, self.numer, self.denom )
+      local tmpl = [[%s\frac{%s}{%s}]]
+      return string.format( tmpl, sgn, self.numer, self.denom )
    else
       return self:__tostring()
    end
+end
+
+function fraction.random( an, bn )
+   local a, b = an * fraction.one(), bn * fraction.one()
+   local d = a.denom * b.denom / gcf( a.denom, b.denom )
+   local l = a.numer * a.sign * d / a.denom
+   local r = b.numer * b.sign * d / b.denom
+   local n = math.random( l + 1, r - 1 )
+   return fraction.new( n, d )
 end
 
 

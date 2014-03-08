@@ -7,6 +7,11 @@ package.path = '/home/dabrowsa/.lib/lua/5.2/?.lua'
 dofile( '/home/dabrowsa/.lib/lua/5.2/save.lua' )
 
 ef = require('enumForm')
+frc = require('fraction')
+vec = require('vector')
+st = require('sets')
+mat = require('matrix')
+line, hp  = require('line')()
 
 --alphabet = {'a','b','c','d','e','f','g','h'}
 alphabet = "abcdefgh"
@@ -17,7 +22,11 @@ romanNums = { [1] = 'i', [2] = 'ii', [3] = 'iii', [4] = 'iv',
 
 switchNumLet = true
 
-
+function mathTypeQ( x )
+   return mat.ismatrix( x ) or frc.isfraction( x ) or
+      vec.isvector( x ) or st.isset( x ) or line.isline( x ) or
+      hp.ishalfplane( x )
+end
 
 function perm( n, r, res )
    res = res or 1
@@ -68,14 +77,20 @@ end
 function prL( lst, ... )
    if ... then io.write( ... ) end
    local loc = copy( lst )
-   local next = table.remove( loc, 1 )
-   local t = type( next )
+   local nxt = table.remove( loc, 1 )
+   local t = type( nxt )
    if t == 'string' or t == 'number' then
-      print( next )
+      print( nxt )
    elseif t == 'table' then
-      prL( next, '\t', ... )
+      prL( nxt, '\t', ... )
    end
    if #loc ~= 0 then prL( loc, ... ) end
+end
+
+function printTable( tab )
+   for k,v in pairs( tab ) do
+      print( ('%s = %s'):format( k, v ) )
+   end 
 end
 
 function randElem ( lst )
@@ -325,11 +340,11 @@ function pruneList( lst )
    return res
 end
 
-function gcf( x, y )
-   if x > y then return gcf( y, x ) end
-   if x == 0 then return y end
-   return gcf( y % x, x )
-end
+-- function gcf( x, y )
+--    if x > y then return gcf( y, x ) end
+--    if x == 0 then return y end
+--    return gcf( y % x, x )
+-- end
 
 function removeOneCoeffs( str, vars )
    vars = vars or 'wxyz'
@@ -411,8 +426,8 @@ end
 --shallow copy
 function copy( tab )
    local res = {}
-   for k in pairs( tab ) do
-      res[ k ] = tab[ k ]
+   for k,v in pairs( tab ) do
+      res[ k ] = v
    end
    return res
 end
@@ -447,7 +462,7 @@ function randSummands( n, sum )
    local pd = p + math.floor( diff / n + 0.5 )
    local res = {}
    for i = 1, n - 1 do
-      local plus = randSign() * math.random( pd )
+      local plus = randSign() * math.random( 0, pd )
       diff = diff - plus
       table.insert( res, p + plus )
    end
@@ -458,6 +473,7 @@ function randSummands( n, sum )
       return randSummands( n, sum )
    end
 end
+
 
 function distinctSummands( n, sum )
    local p = math.floor( sum / n + 0.5 )
@@ -480,11 +496,15 @@ function distinctSummands( n, sum )
 end
 
 function flatten( tab )
-   if type( tab ) == 'table' then
+   if type( tab ) == 'table' and not mathTypeQ( tab ) then
       return listJoin( table.unpack( map( tab, flatten ) ) )
    else
       return { tab }
    end
+end
+
+function flatten1( tab )
+   return listJoin( table.unpack( tab ) )
 end
 
 function coeffToStr( x )
@@ -497,6 +517,57 @@ function coeffToStr( x )
       return ''
    end
 end 
+
+function monoToStr( c, x )
+   if c == '1' or c == 1 then
+      return x
+   elseif c == '-1' or c == -1 then 
+      return '-' .. x
+   elseif c == '0' or c == '-0' or c == 0 then
+      return ''
+   else
+      return c .. x
+   end 
+end 
+
+function removeLeadingPlus( str )
+   local res = str
+   while res:sub( 1, 1 ) == ' ' or res:sub( 1, 1 ) == '+' do
+      res = res:sub(2)
+   end 
+   return res
+end
+
+function polyToStr ( txt )
+   local pat = '(%-?%d*)(%a+)'
+   local res = txt:gsub( pat, monoToStr )
+   res = res:gsub( '%+%s*%-', '- ' )
+   res = res:gsub( '%-%s*%-', '+ ' )
+   local plss = '[%s%+]*%+[%s%+]*'
+   local non = '([^%d%a%s%+%-])'
+   res = res:gsub( non..plss, "%1" )
+   res = res:gsub( plss..non, "%1" )
+   res = removeLeadingPlus( res )
+   return res
+end
+
+function mathToStr(x)
+   local t = type(x)
+   if t == 'number' or t == 'string' then
+      return x
+   else
+      return x:__tostring()
+   end 
+end
+
+function mathToLatex(x)
+   local t = type(x)
+   if t == 'number' or t == 'string' then
+      return x
+   else
+      return x:tolatex()
+   end 
+end
 
 function getAnsTab( name )
    --print( '\n getAnsTab... \n' )
@@ -544,10 +615,164 @@ end
 
 -- Rici Lake via lua-users.org
 function string_interp( str, tab )
-   return ( str:gsub('(@[^%s%p@%%]*)', 
-		 function(w) 
-		    local arg = w:sub(2, -1)
-		    return tab[ arg ] or w 
-		 end))
+   return str:gsub( '(@[^%s%p@%%%}\\]*)', 
+		    function(w) 
+		       local arg = w:sub(2)
+		       return tab[ arg ] or w 
+		    end)
 end
 getmetatable("").__mod = string_interp
+
+
+function two( x )
+   return x, x
+end
+
+
+function listTake( tab, n )
+   res = {}
+   for i = 1,n do
+      table.insert( res, tab[ i ] )
+   end
+   return res
+end
+
+function listDrop( tab, n )
+   res = {}
+   for i = n+1, #tab do
+      table.insert( res, tab[ i ] )
+   end
+   return res
+end
+
+function listSub( lst, a, b )
+   return listDrop( listTake( lst, b ), a - 1 )
+end
+
+function listReverse( lst )
+   if #lst == 0 then return {} end
+   local res = {}
+   return listJoin( listReverse( listDrop( lst, 1 ) ),
+		    listTake( lst, 1 ) )
+end 
+
+function numToSigns( n, dig, frm )
+   dig = dig or - math.floor( - math.log( n ) / math.log( 2 ) )
+   frm = frm or string.rep( 'd', dig )
+   local res = { n }
+   local next = n
+   for i = 1, dig do
+      local j = dig - i + 1
+      local quo, rem = math.floor( next / 2 ), next % 2
+      if rem == 0 then
+	 if frm:sub( j, j ) == 'd' then
+	    table.insert( res, 1 )
+	 else
+	    table.insert( res, true )
+	 end 
+      else 
+	 if frm:sub( j, j ) == 'd' then
+	    table.insert( res, -1 )
+	 else
+	    table.insert( res, false )
+	 end 
+      end 
+      next = quo
+   end 
+   return listReverse( res )
+end 
+
+function sleep(n)
+  os.execute("sleep " .. tonumber(n))
+end
+
+function signIter( d, frm )
+   if type( d ) ~= 'number' then
+      if frm == nil then
+	 frm = d
+	 d = #frm
+      end 
+   end 
+   local i = -1
+   local function res()
+      i = i + 1
+      if i < 2^d then 
+	 return table.unpack( numToSigns( i, d, frm ) )
+      end
+   end 
+   return res
+end 
+
+function signsToStr( ... )
+   local lst = {...}
+   lst = map( lst, function(x) 
+		 if x > 0 then
+		    return '+'
+		 elseif x == 0 then
+		    return '0'
+		 else 
+		    return '-'
+		 end
+		   end  )
+   return table.concat( lst )
+end
+
+function ifset( c, x, y )
+   if c then
+      return x
+   else 
+      return y
+   end 
+end
+
+
+function cartesianX( l1, l2 )
+   local res = {}
+   for i = 1,#l1 do
+      table.insert( res, {} )
+      for j = 1,#l2 do
+	 table.insert( res[ i ], { l1[ i ], l2[ j ] } )
+      end 
+   end
+   return res
+end 
+
+function getOrdinal( n )
+   local ords = { 'first', 'second', 'third', 'fourth', 'fifth', 
+		  'sixth', 'seventh', 'eighth', 'ninth', 'tenth' }
+   return ords[ n ]
+end 
+
+function getCardinal( n )
+   local ords = { 'one', 'two', 'three', 'four', 'five', 
+		  'six', 'seven', 'eight', 'nine', 'ten' }
+   return ords[ n ]
+end 
+
+function mkRandSeq( l, fun, ... )
+   local res = {}
+   for i = 1,l do
+      table.insert( res, fun(...) )
+   end 
+   return table.unpack( res )
+end 
+
+function mkSeqFrFun( l, fun, ... )
+   local res = {}
+   for i = 1,l do
+      table.insert( res, fun( i, ... ) )
+   end 
+   return table.unpack( res )
+end 
+
+function integerInBase( n, b, d )
+   d = d or - math.floor( - math.log( n ) / math.log( b ) )
+   local res = {  }
+   local next = n
+   for i = 1, d do
+      local quo, rem = math.floor( next / b ), next % b
+      table.insert( res, rem )
+      next = quo
+   end 
+   return table.unpack( listReverse( res ) )
+end 

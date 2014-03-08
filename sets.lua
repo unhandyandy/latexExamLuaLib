@@ -23,6 +23,12 @@ function Set:new(values)
   return setmetatable(instance, Set.mt)
 end
 
+function Set.isset( x )
+   return getmetatable( x ) == Set.mt
+end
+
+Set.empty = Set.new( {} )
+
 function Set:add(e)
   if e ~= nil then self[e] = true end
   return self
@@ -97,12 +103,17 @@ function Set:tolatex()
    return string.format( res, table.concat( lst, ',' ) )
 end
 
-function Set:random()
+function Set:random( nontrivial )
+   if nontrivial == nil then nontrivial = false end
    local res = Set:new()
    for k in pairs(self) do
       if randBool() then res[ k ] = true end
    end
-   return res
+   if not nontrivial or ( res ~= Set.empty and res ~= self ) then
+      return res
+   else
+      return  self:random( nontrivial )
+   end
 end
 
 function Set:subset( a )
