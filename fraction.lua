@@ -129,7 +129,21 @@ function fraction.__div( f1, f2 )
 end
 
 function fraction.__eq( f1, f2 )
-   return f1.sign * f1.numer * f2.denom == f2.sign * f2.numer * f1.denom
+   if not fraction.isfraction( f1 ) then
+      if type( f1 ) == "number" then
+	 return fraction.__eq( fraction.fromDecimal( f1 ), f2 )
+      else
+	 return false
+      end
+   elseif not fraction.isfraction( f2 ) then
+      if type( f1 ) == "number" then
+	 return fraction.__eq( f1, fraction.fromDecimal( f2 ) )
+      else
+	 return false
+      end
+   else
+      return f1.sign * f1.numer * f2.denom == f2.sign * f2.numer * f1.denom
+   end
 end
 
 function fraction.__pow( fr, p )
@@ -138,11 +152,20 @@ function fraction.__pow( fr, p )
    return res
 end
 
+function fraction.fromDecimal( x )
+   if x == math.floor( x ) then
+      return frc.one() * x
+   else 
+      return fraction.fromDecimal( 10 * x ) / 10
+   end
+end
+
+
 function fraction:tolatex()
    local sgn = coeffToStr( self.sign )
    --print( '\n sgn = ' .. sgn .. '\n' )
    if self.numer ~= 0 and self.denom ~= 1 then
-      local tmpl = [[%s\frac{%s}{%s}]]
+      local tmpl = [[%s\sfrac{%s}{%s}]]
       return string.format( tmpl, sgn, self.numer, self.denom )
    else
       return self:__tostring()
@@ -151,7 +174,7 @@ end
 
 function fraction.random( an, bn )
    local a, b = an * fraction.one(), bn * fraction.one()
-   local d = a.denom * b.denom / gcf( a.denom, b.denom )
+   local d = 2 * a.denom * b.denom / gcf( a.denom, b.denom )
    local l = a.numer * a.sign * d / a.denom
    local r = b.numer * b.sign * d / b.denom
    local n = math.random( l + 1, r - 1 )

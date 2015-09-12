@@ -32,13 +32,15 @@ function conditionalTD( tm, n1, n2, n3 )
       local lst = {}
       for j = 1,3 do
 	 p = tm[ i ][ j ]
-	 if p > 0 then
-	    table.insert( lst, edges[ i ][ j ]:format( p ) )
+	 if type( p ) == "string" or p > 0 then
+	    local ltx = p
+	    if type( p ) ~= "string" then ltx = p:tolatex() end
+	    table.insert( lst, edges[ i ][ j ]:format( ltx ) )
 	 end 
       end 
       table.insert( subs, table.concat( lst, ' ' ) )
    end 
-   return form:format( n1, n2, n3, table.unpack( subs ) )
+   return form:format( n3, n2, n1, table.unpack( subs ) )
 end 
 
 function conditionalTD2( tm, n1, n2 )

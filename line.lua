@@ -88,7 +88,7 @@ function Line:initMaxima( m )
    m = m or self.max
    m:exec( 'load', [["draw"]] )
    m:exec( 'load', [["stringproc"]] )
-   m:exec( [[ set_draw_defaults(axis_bottom = false,axis_top = false,axis_left = false,axis_right = false,xtics_axis = true, ytics_axis = true,fill_color = green,xaxis = true, xaxis_type = solid, xaxis_color = blue,yaxis = true,   yaxis_type = solid, yaxis_color = blue,point_size=.5,point_type = 7,color = black, x_voxel = 60, y_voxel = 60) ]] )
+   m:exec( [[ set_draw_defaults(axis_bottom = false,axis_top = false,axis_left = false,axis_right = false, xtics = 1, ytics = 1, xtics_axis = true, ytics_axis = true, user_preamble="set grid front", fill_color = green,xaxis = true, xaxis_type = solid, xaxis_color = blue,yaxis = true,   yaxis_type = solid, yaxis_color = blue,point_size=.5,point_type = 7,color = black, x_voxel = 60, y_voxel = 60) ]] )
    sleep( 2.0 )
 end 
 
@@ -111,6 +111,7 @@ function Line:saveGraph( m )
 	   'file_name = ' .. file )
    sleep( 0.5 )
 end 
+
 
 function Line:cleanup()
    io.popen( 'rm ' ..  self:filename() .. '*' )
@@ -160,7 +161,7 @@ function Line.newPtSlope( p, m )
    local x, y = p[1], p[2]
    local a, b
    if frc.isfraction( m ) then
-      a, b = m.numer, m.denom
+      a, b = -1 * m.sign * m.numer, m.denom
    else 
       a, b = -m, 1
    end 
@@ -172,6 +173,9 @@ end
 
 function Line.new( a, b, c )
    local res = {}
+   if a < 0 then
+      a, b, c = -1 * a, -1 * b, -1 * c
+   end
    res.A, res.B, res.C = a, b, c
    return setmetatable( res, Line )
 end
@@ -264,6 +268,7 @@ end
 
 function Halfplane.maxGraph( ... )
    local regstr = Halfplane.tomaximaregion(...)
+   --print( "regstr: " .. regstr )
    local hps = {...}
    local max = hps[1].line.max
    hps = map( hps, function(x) return x.line:tomaximplicit() end )
@@ -295,7 +300,9 @@ function Halfplane.tolatexpic(...)
    local frm = [[\includegraphics[scale=%s]{%s}]]
    local file = Halfplane.filename(...) .. '.png'
    local scale = hps[1].line.scale
-   return frm:format( scale, file )
+   local res = frm:format( scale, file )
+   --print( "\n latex = " .. res .. "\n" )
+   return res
 end 
 
 function Halfplane.random( max )

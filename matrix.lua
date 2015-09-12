@@ -258,7 +258,7 @@ function matrix:tolatex( augmented )
    --local matstr = self:__tostring( false )
    local matstr = {}
    for i = 1, r do
-      local selfstr = map( self[i], mathToStr )
+      local selfstr = map( self[i], mathToLatex )
       table.insert( matstr, table.concat( selfstr, ' & ' ) )
    end 
    matstr = table.concat( matstr, [[ \\ ]] )
@@ -269,7 +269,7 @@ function matrix:hasZeros()
    local r,c = self:getDim()
    for i = 1,r do
       for j = 1,c do
-	 if self[ i ][ j ] == 0 then
+	 if self[ i ][ j ] == 0 * one then
 	    return true
 	 end 
       end 

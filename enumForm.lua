@@ -53,8 +53,8 @@ end
 local function tabToLatex( tab, blank )
    blank = blank or false
    local t = type( tab )
-   local function TtL( t )
-      return tabToLatex( t, blank )
+   local function TtL( tb )
+      return tabToLatex( tb, blank )
    end
    if t == 'table' then
       local middle = map( tab, TtL )

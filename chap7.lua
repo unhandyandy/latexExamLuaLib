@@ -7,15 +7,16 @@ line = require('line')()
 max = require('maxima')
 line.max = max.new()
 line:initMaxima()
+line.extent = { -1, -1, 8, 8 }
 --line.dir = '/home/dabrowsa/math/maxima/plots/'
 --line.scale = .4
 
 mat = require('matrix')
 
 mp = require('mathProblem')
-mp.chcFun = [[\chc]]
-mp.numberChoices = 8
-mp.mcP = true
+mp.chcFun = [[\qrowFour]]
+--mp.numberChoices = 6
+--mp.mcP = true
 
 ef = require('enumForm')
 answers = ef.new()
@@ -38,15 +39,17 @@ function lpForm( mxn, rel, ovec, mat, tots )
       mat[1][1], mat[1][2], mat[1][3], rst, tots[1],
       mat[2][1], mat[2][2], mat[2][3], rst, tots[2],
       mat[3][1], mat[3][2], mat[3][3], rst, tots[3] )
-   return [[\begin{minipage}{2.5in}\begin{framed}]] .. res .. [[\end{framed}\end{minipage}]]
+   return [[\begin{minipage}{2.5in}\begin{framed}]] .. polyToStr( res ) .. [[\end{framed}\end{minipage}]]
 end
 
+lpSetupmcNote = [[ (Note that the natural constraints \(x
+   \geq 0,      y \geq 0,     z \geq 0 \), have been omitted from the
+   answers.) ]]
 
 lpSetup = mp:new(
    [[ Formulate the following word problem as a linear programming
-   problem.  (Note that the natural constraints \(x
-   \geq 0,      y \geq 0,     z \geq 0 \), have been omitted from the
-   answers.)  Do {\em not} attempt to solve it! \\
+   problem.  
+   Do {\em not} attempt to solve it! \\
    
    As a tobacco addict, you need at least @ex1 g (grams) of nicotine, 
    @ex2 g of tar, 
@@ -69,17 +72,20 @@ lpSetup = mp:new(
      z &=& \tx{\# bowls of pipe tobacco.}
      \end{array} \]
      
-   (Note: 1 g. = 1000 mg.) ]],
+   (Note: 1 g. = 1000 mg. Also, note that the natural constraints \(x
+   \geq 0,      y \geq 0,     z \geq 0 \), have been omitted from the
+   answers.)]],
 
    function( self )
       ex1,ex2,ex3 = distinctRands( 3, 1, 20 )
       ex1,ex2,ex3 = ex1/10,ex2/10,ex3/10
       local mpm = mat.random( 3, 3, 30, false )
+      local mpmtr = mat.transpose( mpm )
       ob1,ob2,ob3 = distinctRands( 3, 1, 9 )
       ob1,ob3 = ob1/10,ob3/10
-      in11,in12,in13 = table.unpack( mpm[1] )
-      in21,in22,in23 = table.unpack( mpm[2] )
-      in31,in32,in33 = table.unpack( mpm[3] )
+      in11,in12,in13 = table.unpack( mpmtr[1] )
+      in21,in22,in23 = table.unpack( mpmtr[2] )
+      in31,in32,in33 = table.unpack( mpmtr[3] )
       local anslst = {}
       for a,b,c in signIter( 'bbb' ) do
 	 local o1,o2,o3,t1,t2,t3, obj, rel
@@ -103,9 +109,9 @@ lpSetup = mp:new(
 				       {t1,t2,t3} ) )
       end 
       return anslst
-   end,
-   [[\chcs]]
+   end
 )
+lpSetup.chcFun = [[\qrowTwo]]
 
 
 
@@ -116,7 +122,7 @@ lpSetupSeuss = mp:new(
    answers.)  Do {\em not} attempt to solve it! \\
    
    The @name is an animal that
-   eats three foods: @fn1's, @fn2's, and @fn3's.
+   eats three foods: @fn1\nosp s, @fn2\nosp s, and @fn3\nosp s.
    A @fn1 costs \$@ob1 and
    provides @in11 mg (milligrams) of @nn1, 
    @in12 mg of @nn2, and @in13 mg of @nn3.  
@@ -132,9 +138,9 @@ lpSetupSeuss = mp:new(
 
    Use the variables
    \[ \begin{array}{rcl}
-     x &=& \tx{\# @fn1's} \\
-     y &=& \tx{\# @fn2's} \\
-     z &=& \tx{\# @fn3's.}
+     x &=& \tx{\# @fn1\nosp s} \\
+     y &=& \tx{\# @fn2\nosp s} \\
+     z &=& \tx{\# @fn3\nosp s.}
      \end{array} \]
      
    (Note: 1 g. = 1000 mg.) ]],
@@ -145,7 +151,7 @@ lpSetupSeuss = mp:new(
    answers.)  Do {\em not} attempt to solve it! \\
    
    The @name is an animal that
-   eats three foods: @fn1's, @fn2's, and @fn3's.
+   eats three foods: @fn1\nosp s, @fn2\nosp s, and @fn3\nosp s.
    One @fn1 makes the @name happy for @ob1 hours,
    a @fn2 makes it happy for @ob2 hours,
    and a @fn3 makes it happy for @ob3 hours.
@@ -158,14 +164,15 @@ lpSetupSeuss = mp:new(
    @in32 mg of @nn2 and @in33 mg of @nn3.  
    Unfortunately @nn2 and @nn3 are toxins and the @name cannot have
    more than @ex2 g (grams) of @nn2 or 
-   more than @ex3 g of @nn3 per day. 
-   How do you make your pet @name as happy as possible 
-   while keeping it alive on a budget of \$@ex1 per day?
+   more than @ex3 g of @nn3. 
+   How do you make your pet @name as happy for as long as
+   possible (in hours)
+   while keeping it alive on a budget of \$@ex1?
 
    Use the variables
-   \[      x = \tx{\# @fn1's} \quad
-     y = \tx{\# @fn2's} \quad
-     z = \tx{\# @fn3's.}
+   \[      x = \tx{\# @fn1\nosp s} \quad
+     y = \tx{\# @fn2\nosp s} \quad
+     z = \tx{\# @fn3\nosp s.}
       \]
      
    (Note: 1 g. = 1000 mg.) ]] },
@@ -202,23 +209,23 @@ lpSetupSeuss = mp:new(
 	    o1,o2,o3,t1,t2,t3 = ex1lst[vn],ex2*1000,ex3*1000,ob1,ob2,ob3
 	 end 
 	 table.insert( anslst, lpForm( obj, rel, 
-				       {o1,o2,o3}, mpm, 
+				       {o1,o2,o3}, mpm:transpose(), 
 				       {t1,t2,t3} ) )
       end 
       --print('\n length = ' .. #anslst .. '\n' )
       return anslst
    end,
-   [[\chcs]]
+   [[\qrowTwo]]
 )
 
 function randPt()
-   local x = math.random( line.extent[1] + 1, line.extent[3] - 1 )
-   local y = math.random( line.extent[2] + 1, line.extent[4] - 1 )
+   local x = math.random( line.extent[1] + 2, line.extent[3] - 2 )
+   local y = math.random( line.extent[2] + 2, line.extent[4] - 2 )
    return { x,y }
 end 
 
 lpGraph = mp:new(
-   [[ Which graph represents the given system of inequalities? \\
+   [[ Graph the given system of inequalities. \\
 
 \qquad \( \begin{array}{rl}
 {\rm I. }& @in1 \\
@@ -267,14 +274,13 @@ lpGraph = mp:new(
       hp.saveGraph( d1, in2 )
       table.insert( anslst, hp.tolatexpic( d1, in2 ) )	 
       return anslst
-   end,
-   [[\chcs]]
+   end
 )
-
+lpGraph.chcFun = [[\qrowTwoBars]]
 
 
 lpCorner = mp:new(
-   [[ Find the coordinates of corner point @pt of the feasible set in
+   [[ Find the coordinates of corner point {\bf @pt} of the feasible set in
    the diagram below.  The equations of the lines are as follows.
 $$
 \begin{array}{rl}
@@ -284,7 +290,7 @@ $$
 \end{array}
 $$
 Be aware that I have {\em not} made the
-diagram precisely accurate, so you must compute the
+diagram precisely to scale, so you must compute the
 corner points algebraically!
  
 \begin{figure}[!h]
@@ -294,7 +300,7 @@ corner points algebraically!
 \end{figure}
 
 ]],
-
+      -- q=1 => A, q=2 => B, etc.
     function( self, q )
 	 pt = ({ 'A', 'B', 'C' })[ q ]
 	 local x1,y1,x2,y2 = table.unpack( line.extent )
@@ -304,13 +310,13 @@ corner points algebraically!
 		     math.random( b + 1, y2 - 1 ) }
 	 l1 = line.newFromPoints( a, { 0, b } )
 	 local m1 = l1:slope()
-	 local m2 = frc.random( one / 2, m1 )
+	 local m2 = frc.random( m1 / 6, m1 )
 	 l2 = line.newPtSlope( a, m2 )
-	 local m3 = frc.random( one / 12, m2 )
+	 local m3 = frc.random( m2 / 6, m2 )
 	 l3 = line.newPtSlope( { c, 0 }, m3 )
 	 local ansver = { a, {0, b}, {c, 0} }
 	 local anslst = { ansver[ q ],
-			  a, {0, b}, {c, 0},
+			  a, --{0, b}, {c, 0},
 			  randPt(), randPt(), randPt(), 
 			  randPt(), randPt(), randPt(),
 			  randPt(), randPt(), randPt(), 
@@ -332,19 +338,26 @@ function ptForm( p )
    return [[(\,]]..p[1]..', '..p[2]..[[\,)]]
 end
 
+
+line.extent = { -3, -3, 8, 8 }
+
 lpSolve = mp:new(
-   [[ Shown in the diagram is a @type feasible set.  The corners of
+   [[ Shown in the diagram is a @kind feasible set
+   formed by @numlines inequalities.
+   The corners of
    the feasible set are all points with integer coordinates. Find the
-   {\em locations} of the max and min 
+   {\em locations}, i.e.\ the \(xy\)-coordinates, of the max and min 
    of the objective function @obj on the feasible set. \\
 
    @diagram ]],
-
+   -- q=1 => bounded, q=2 => unbounded
    function( self, q )
-      type = ({ 'bounded', 'unbounded' })[ q ]
+      kind = ({ 'bounded', 'unbounded' })[ q ]
+      numlines = ifset( q==1, 4, 3 )
       local cx, cy = 2, 2
       local x1,y1,x2,y2 = table.unpack( line.extent )
-      x1, y1 = x1 + 1, y1 + 1
+      x1, y1 = x1 + 3, y1 + 3
+      x2, y2 = x2 - 1, y2 - 1
       local a = { math.random( x1, cx - 1 ),
 		  math.random( y1, cy - 1 ) }
       local b = { math.random( x1, cx - 1 ),
@@ -426,10 +439,10 @@ lpSolve = mp:new(
 	       anstmpl:format( ansfrm(1), ansfrm(2) ),
 	       anstmpl:format( ansfrm(1), ansfrm(3) ),
 	       anstmpl:format( ansfrm(1), ansfrm(4) ),
-	       anstmpl:format( ptForm({0,0}), ptForm({6,6}),
-	       anstmpl:format( ptForm({0,1}), ptForm({5,6}),
-	       anstmpl:format( ptForm({1,0}), ptForm({6,5}),
+	       anstmpl:format( ptForm({0,0}), ptForm({6,6}) ),
+	       anstmpl:format( ptForm({0,1}), ptForm({5,6}) ),
+	       anstmpl:format( ptForm({1,0}), ptForm({6,5}) ),
 	       anstmpl:format( ptForm({1,1}), ptForm({5,5}) ) }
 
-   end 
+   end
 )

@@ -97,9 +97,10 @@ function mathProblem:generate( ... )
       local blanks = createBlankList( self.numberChoices, [[{%s}]] )
       blanks = table.concat( blanks )
       latex = latex .. [[ \\ \\ %s]] .. blanks
+      chcltx = self.listToLatex( chcs )
+      --print( "\n chcltx = " .. table.concat( chcltx, ", " ) .. "\n" )
       latex = string.format( latex, self.chcFun, 
-			     table.unpack( self:mkchc(
-					      self.listToLatex( chcs )))) 
+			     table.unpack( self:mkchc( chcltx ))) 
    else
       --print('\n chcs = ' .. chcs .. '\n' )
       local ans = chcs
@@ -117,6 +118,7 @@ function mathProblem:generate( ... )
 end
 
 local function objToLatex( x, surround )
+   --if type(x)=="function" then print("\n x: " .. x .. "\n" ) end
    if surround == nil then surround = true end
    local t = type( x )
    if t == 'number' or t == 'string' then

@@ -46,7 +46,7 @@ end
 
 function maxima:tolatexpic( obj, t )
    t = t or 0.5
-   local frm = [[\includegraphics[scale=%s]{%s}]]
+   local frm = [[\includegraphics[scale=%s,trim=4 4 4 4,clip=true]{%s}]]
    local file = obj:filename() .. '.png'
    local scale = obj.scale
    return frm:format( scale, file )

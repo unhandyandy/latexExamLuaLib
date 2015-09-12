@@ -136,9 +136,9 @@ end
 
 function vector:tolatex()
    local ltx = map( self, mathToLatex )
-   ltx = table.concat( ltx, ', ' )
+   ltx = table.concat( ltx, [[\ \ ]] )
    --return [[ (\,]] .. (self:__tostring()):sub(2,-2) .. [[\,)]]
-   return [[ (\,]] .. ltx .. [[\,)]]
+   return [[ [\ ]] .. ltx .. [[\ ] ]]
 end
 
 

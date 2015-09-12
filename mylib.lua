@@ -315,7 +315,12 @@ function latexEncl( x )
    return [[\(]] .. x:tolatex() .. [[\)]]
 end
 
+function mathEncl( x )
+   return [[\(]] .. x .. [[\)]]
+end
+
 function map( t, f )
+   if type(t)=="string" then print( "\n t: " .. t .. "\n" ) end 
    local res = {}
    for k in pairs( t ) do
       res[ k ] = f( t[ k ] )
@@ -495,6 +500,7 @@ function distinctSummands( n, sum )
    return table.unpack( lst )
 end
 
+
 function flatten( tab )
    if type( tab ) == 'table' and not mathTypeQ( tab ) then
       return listJoin( table.unpack( map( tab, flatten ) ) )
@@ -537,9 +543,19 @@ function removeLeadingPlus( str )
    end 
    return res
 end
+function removeTrailingPlus( str )
+   local res = str
+   while res:sub( -1, -1 ) == ' ' or res:sub( -1, -1 ) == '+' do
+      res = res:sub(1,-2)
+   end 
+   return res
+end
 
 function polyToStr ( txt )
-   local pat = '(%-?%d*)(%a+)'
+   if type( txt ) == "number" then
+      return txt
+   end 
+   local pat = '([%-%.0-9]?%d*)(%a+)'
    local res = txt:gsub( pat, monoToStr )
    res = res:gsub( '%+%s*%-', '- ' )
    res = res:gsub( '%-%s*%-', '+ ' )
@@ -548,6 +564,8 @@ function polyToStr ( txt )
    res = res:gsub( non..plss, "%1" )
    res = res:gsub( plss..non, "%1" )
    res = removeLeadingPlus( res )
+   res = removeTrailingPlus( res )
+   if res:find( "^%s*$" ) then res = "0" end
    return res
 end
 
@@ -776,3 +794,15 @@ function integerInBase( n, b, d )
    end 
    return table.unpack( listReverse( res ) )
 end 
+
+function simplifyMatrix( mat )
+   res = mat:clone()
+   r, c = mat:getDim()
+   for i = 1, r do
+      for j = 1, c do
+	 res[i][j] = polyToStr( res[i][j] )
+      end
+   end 
+   return res
+end 
+

@@ -13,8 +13,8 @@ line:initMaxima()
 mat = require('matrix')
 
 mp = require('mathProblem')
-mp.chcFun = [[\chc]]
-mp.numberChoices = 8
+mp.chcFun = [[\qrowFour]]
+mp.numberChoices = 6
 mp.mcP = true
 
 ef = require('enumForm')
@@ -26,8 +26,16 @@ function mkp( s1, s2, dt )
    return [[\( p_{]] .. s1 .. [[,]] .. s2 .. [[}(]] .. dt .. [[)\)]]
 end 
 
+function mkpdesc( s1, s2, dt )
+   local pow = ifset( dt == 1, "", dt )
+   return string.format( 
+      [[ the \(( %d, %d )\) entry of \(P^{%s}\) ]], 
+      s1, s2, pow ) 
+end 
+
 pMeaning = mp:new(
-   [[ Suppose that a Markov chain is in state @stinit on the @t1ord
+   [[ Suppose that a Markov chain with transition matrix \(P\)
+   is in state @stinit on the @t1ord
    observation.  Which of the following expressions represents the
    probability that it will be in state @stlast on the @t2ord
    observation?  ]],
@@ -37,18 +45,21 @@ pMeaning = mp:new(
       stinit, stlast, tdel = distinctRands( 3, 1, 5 )
       local t2 = t1 + tdel
       t1ord, t2ord = getOrdinal( t1 ), getOrdinal( t2 )
-      return { mkp( stinit, stlast, tdel ),
-	       mkp( stinit, stlast, t2 ),
-	       mkp( stlast, stinit, tdel ),
-	       mkp( stlast, stinit, t2 ),
-	       mkp( t1, t2, stlast ),
-	       mkp( t1, t2, stinit ),
-	       mkp( t2, t1, stlast ),
-	       mkp( t2, t1, stinit ),
-	       mkp( stinit, t1, t2 ),
-	       mkp( stlast, t2, t1 ) }
-   end 
+      return { mkpdesc( stinit, stlast, tdel ),
+	       mkpdesc( stinit, stlast, t2 ),
+	       mkpdesc( stlast, stinit, tdel ),
+	       mkpdesc( stlast, stinit, t2 ),
+	       mkpdesc( t1, t2, stlast ),
+	       mkpdesc( t1, t2, stinit ),
+	       mkpdesc( t2, t1, stlast ),
+	       mkpdesc( t2, t1, stinit ),
+	       mkpdesc( stinit, t1, t2 ),
+	       mkpdesc( stlast, t2, t1 ) }
+   end,
+   [[\qrowFour]]
 )
+
+
 
 pValue = mp:new(
    [[ Suppose that a Markov chain has transition matrix
@@ -89,40 +100,68 @@ pValue = mp:new(
 			   3, 3 ) }
    end 
 )
+pValue.chcFun = [[\qrowEight]]
 
 function randTrans( n, max )
    n = n or 3
    max = max or 10
    local rows = {}
    for i = 1,n do
+      --m = math.random( 2, max )
       local rn = vec.new({ randSummands( n, max ) })
-      table.insert( rows, 1/max * rn )
+      table.insert( rows, one / max * rn )
    end 
    return mat.new( rows )
 end 
       
+mcSequence = mp:new( 
+   [[ Suppose a Markov Chain has transition matrix
+   \[ @tm. \]
+   If the system starts in state @s1, what is the probability that it
+   goes to state @s2 on the next observation, and then goes to state
+   @s3 on the following observation?  ]],
+
+   function( self )
+      tm = randTrans( 4, 6 )
+      s1, s2, s3 = distinctRands( 3, 1, 4 )
+      return { tm[ s1 ][ s2 ] * tm[ s2 ][ s3 ],
+	       tm[ s2 ][ s1 ] * tm[ s3 ][ s2 ],
+	       tm[ s1 ][ s2 ] * tm[ s1 ][ s3 ],
+	       tm[ s2 ][ s1 ] * tm[ s3 ][ s1 ],
+	       tm[ s1 ][ s3 ] * tm[ s2 ][ s1 ],
+	       tm[ s1 ][ s3 ], tm[ s1 ][ s2 ], tm[ s3 ][ s1 ],
+	       one * 0, one,
+	       frc.random( one/12, one * 11/12 ),
+	       frc.random( one/12, one * 11/12 ),
+	       frc.random( one/12, one * 11/12 ),
+	       frc.random( one/12, one * 11/12 ) }
+   end
+)
 
 regular = mp:new(
-   [[ Which of the following transition matrices is/are regular?
+   [[ Which of the following transition matrices is/are for a regular
+   Markov Chain?  
 
-   \[ A = @amat \qquad B = @bmat \qquad C = @cmat \] ]],
+   \[ X = @amat \qquad Y = @bmat \qquad Z = @cmat \] ]],
    
    function( self )
       amat = randTrans(3,2)
       bmat = randTrans(3,2)
+      while amat == bmat do bmat = randTrans(3,2) end
       cmat = randTrans(3,2)
+      while amat == cmat or bmat == cmat do cmat = randTrans(3,2) end
       local ans = { amat:isregular(), bmat:isregular(), cmat:isregular() }
       local anslst = {}
       for a,b,c in signIter( 'bbb' ) do
 	 local curans = {}
 	 if a == ans[1] then
-	    table.insert( curans, 'A' )
+	    table.insert( curans, [[\(X\)]] )
 	 end
 	 if b == ans[2] then
-	    table.insert( curans, 'B' )
+	    table.insert( curans, [[\(Y\)]] )
 	 end
 	 if c == ans[3] then
-	    table.insert( curans, 'C' )
+	    table.insert( curans, [[\(Z\)]] )
 	 end
 	 curans = table.concat( curans, ', ' )
 	 if curans == '' then curans = 'none' end
@@ -131,9 +170,11 @@ regular = mp:new(
       return anslst
    end 
 )
+regular.chcFun = [[\qrowEight]]
+
 
 stateVecWrite = mp:new(
-   [[ A markov chain with 4 states is currently equally likely to be
+   [[ A Markov Chain with 4 states is currently equally likely to be
    in states @s1 and @s2, but is @r31 times as likely to be in state
    @s3 as in @s1, and is @r43 times as likely to be in @s4 as in @s3.
    What is the state vector that describes this situation? ]],
@@ -175,23 +216,23 @@ stateVecWrite = mp:new(
 	 table.insert( anslst, cur )
       end 
       return anslst
-   end,
-   [[\chcs]]
+   end
 )
 
 stateVecProject = mp:new(
-   [[ A Markov chain has the transition matrix
+   [[ A Markov Chain has the transition matrix
    \[  P = @trans, \]
    and currently has state vector \( @init \).
    What is the probability it will be in state @stend after @deltstr more
-   stages of the process? ]],
+   stages (observations) of the process? ]],
 
    function( self )
       local size = 2
-      trans = randTrans( size )
+      trans = randTrans( size, 6 )
+      while trans[1]==trans[2] do trans = randTrans( size ) end
       local delt = 2
       deltstr = getCardinal( delt )
-      init = 0.1 * mat.new({{ randSummands( size, 10 ) }})
+      init = one / 6 * mat.new({{ randSummands( size, 6 ) }})
       stend = math.random( size )
       local right = init * (trans ^ delt)
       local wrong = init * (trans ^ ( delt - 1 ))
@@ -218,6 +259,8 @@ stateVecProject = mp:new(
 	       0.01 * math.random(100) }
    end 
 )
+--stateVecProject.chcFun = [[\chcSix]]
+
 
 function stable( tm )
    local r = tm:getDim()
@@ -265,120 +308,72 @@ stableFind = mp:new(
    end 
 )
 
+
+require("transitionDia.lua")
+
 tdFill = mp:new(
-   [[ What are values of \(x\), \(y\), and \(z\) in the transition 
+   [[ What is the value of \( @unknown \) in the transition 
    diagram? \\
 
-   \transitionDiaCFull{@p11}{@p12}{@p13}{@p21}{@p22}{@p23}{@p31}{@p32}{@p33} ]],
+   @td ]],
    function( self )
       local missing = { math.random(3), math.random(3), math.random(3) }
-      local function ansfrm( a,b,c )
-	 local frm = [[ \( \begin{array}{rcl} 
-           x &=& %s \\ y &=& %s \\ z &=& %s 
-         \end{array} \) ]]
-	 return frm:format(mathToStr(a),mathToStr(b),mathToStr(c))
-      end 
+      local unknownind = math.random(3)
+      unknown = ({ 'x', 'y', 'z' })[ unknownind ]
+      -- local function ansfrm( a,b,c )
+      -- 	 local frm = [[ \( \begin{array}{rcl} 
+      --      x &=& %s \\ y &=& %s \\ z &=& %s 
+      --    \end{array} \) ]]
+      -- 	 return frm:format(mathToStr(a),mathToStr(b),mathToStr(c))
+      -- end 
       local tm = randTM( 3, 6 )
       --print( '\n tm = ' .. tm:__tostring() .. '\n' )
       p11, p12, p13 = table.unpack( tm[1] )
       p21, p22, p23 = table.unpack( tm[2] )
       p31, p32, p33 = table.unpack( tm[3] )
-      anslst = { ansfrm( tm[1][ missing[1] ],
-			  tm[2][ missing[2] ],
-			  tm[3][ missing[3] ] ),
-		 mkRandSeq( 10, function()
-			       return ansfrm( mkRandSeq( 3, function()
-							    return math.random( 6 ) * one / 6
-							    end ) )
-				end ) }
+      anslst = { tm[ unknownind ][ missing[ unknownind ] ],
+		 p11, p12, p13, p21, p22, p23, p31, p32, p33,
+		 p11 + p12, p13 + p21, p22 + p23, p31 + p32, p32 + p33,
+		 p12 + p13, p21 + p22, p23 + p31, p11 + p33,
+		 0, 1, 
+		 frc.random( 0, 1 ), frc.random( 0, 1 ), frc.random( 0, 1 ) }
+      -- anslst = { ansfrm( tm[1][ missing[1] ],
+      -- 			  tm[2][ missing[2] ],
+      -- 			  tm[3][ missing[3] ] ),
+      -- 		 mkRandSeq( 10, function()
+      -- 			       return ansfrm( mkRandSeq( 3, function()
+      -- 							    return math.random( 6 ) * one / 6
+      -- 							    end ) )
+      -- 				end ) }
       if missing[1] == 1 then
-      	 p11 = 'x'
+      	 tm[1][1] = 'x'
       elseif missing[1] == 2 then
-      	 p12 = 'x'
+      	 tm[1][2] = 'x'
       else 
-      	 p13 = 'x'
+      	 tm[1][3] = 'x'
       end
       if missing[2] == 1 then
-      	 p21 = 'y'
+      	 tm[2][1] = 'y'
       elseif missing[2] == 2 then
-      	 p22 = 'y'
+      	 tm[2][2] = 'y'
       else 
-      	 p23 = 'y'
+      	 tm[2][3] = 'y'
       end
       if missing[3] == 1 then
-      	 p31 = 'z'
+      	 tm[3][1] = 'z'
       elseif missing[3] == 2 then
-      	 p32 = 'z'
+      	 tm[3][2] = 'z'
       else 
-      	 p33 = 'z'
+      	 tm[3][3] = 'z'
       end
+      td = conditionalTD( tm )
       --print( '\n anslst[2] = ' .. anslst[2] .. '\n' )
       return anslst
-   end 
+   end,
+   [[\qrowEight]]
 )
 
-function conditionalTD( tm )
-   local form = [[ \begin{figure}[h]\centering
-     \begin{tikzpicture}[>=triangle 45,shorten >=1pt,node distance=3cm,on grid,auto,bend angle=15] 
-       \node[state] at (0,-1.7) (3)   {1}; 
-         \node[state] at (2,2) (2) {2}; 
-           \node[state] at (-2,2) (1) {3};
-             \path[->] 
-             (1) %s
-             (2) %s
-             (3) %s;
-           \end{tikzpicture}
-         \end{figure} ]]
-   local edges = { { [[ edge [loop left] node {\(%s\)} (1) ]],
-		     [[ edge [bend left] node {\(%s\)} (2) ]],
-		     [[ edge [bend left] node {\(%s\)} (3) ]] },
-		   { [[ edge [bend left] node {\(%s\)} (1) ]],
-		     [[ edge [loop right] node {\(%s\)} (2) ]], 
-		     [[ edge [bend left] node {\(%s\)} (3) ]] },
-		   { [[ edge [bend left] node {\(%s\)} (1) ]],
-		     [[ edge [bend left] node {\(%s\)} (2) ]],
-		     [[ edge [loop below] node {\(%s\)} (3) ]] } }
-   local subs = {}
-   for i = 1,3 do
-      local lst = {}
-      for j = 1,3 do
-	 p = tm[ i ][ j ]
-	 if p > 0 then
-	    table.insert( lst, edges[ i ][ j ]:format( p ) )
-	 end 
-      end 
-      table.insert( subs, table.concat( lst, ' ' ) )
-   end 
-   return form:format( table.unpack( subs ) )
-end 
 
-function conditionalTD2( tm )
-   local form = [[ \begin{figure}[h]\centering
-     \begin{tikzpicture}[>=triangle 45,shorten >=1pt,node distance=3cm,on grid,auto,bend angle=15] 
-         \node[state] at (2,2) (2) {2}; 
-           \node[state] at (-2,2) (1) {1};
-             \path[->] 
-             (1) %s
-             (2) %s
-           \end{tikzpicture}
-         \end{figure} ]]
-   local edges = { { [[ edge [loop left] node {\(%s\)} (1) ]],
-		     [[ edge [bend left] node {\(%s\)} (2) ]] },
-		   { [[ edge [bend left] node {\(%s\)} (1) ]],
-		     [[ edge [loop right] node {\(%s\)} (2) ]] } }
-   local subs = {}
-   for i = 1,2 do
-      local lst = {}
-      for j = 1,2 do
-	 p = tm[ i ][ j ]
-	 if p > 0 then
-	    table.insert( lst, edges[ i ][ j ]:format( p ) )
-	 end 
-      end 
-      table.insert( subs, table.concat( lst, ' ' ) )
-   end 
-   return form:format( table.unpack( subs ) )
-end 
 
 
 tdToTM = mp:new(
@@ -389,7 +384,7 @@ tdToTM = mp:new(
    function( self )
       local tm = randTM( 3, 6 )
       td = conditionalTD( tm )
-      print( '\n td = ' .. td .. '\n' )
+      --print( '\n td = ' .. td .. '\n' )
       tmw1 = tm:clone()
       tmw1[1], tmw1[2] = tmw1[2], tmw1[1]
       tmw2 = tm:clone()
@@ -400,8 +395,7 @@ tdToTM = mp:new(
 	       tmw1, mat.transpose(tmw1),
 	       tmw2, mat.transpose(tmw2),
 	       tmw3, mat.transpose(tmw3) }
-   end,
-   [[\chcs]]
+   end
 )
 
 function normalizeVec( v )
@@ -461,206 +455,8 @@ tmFind = mp:new(
 	 table.insert( anslst, cur )
       end 
       return anslst
-   end,
-   [[\chcs]]
+   end
 )
 
 
 
---[[
-\item 
-A Markov chain has the transition matrix 
-$P = \left[\begin{array}{ccc} 
-0.7 & 0.1 & 0.2 \\ 
-0.3 & 0.7 & 0 \\ 
-1 & 0 & 0 
-\end{array}\right]$. 
-For this matrix, 
-\newline 
-$P(2) = \left[\begin{array}{ccc} 
-0.72 & 0.14 & 0.14 \\ 
-0.42 & 0.52 & 0.06 \\ 
-0.70 & 0.10 & 0.20 
-\end{array}\right]$ 
-and $P(3) = 
-\left[\begin{array}{ccc} 
-0.686 & 0.17 & 0.144 \\ 
-0.51 & 0.406 & 0.084 \\ 
-0.72 & 0.14 & 0.14 
-\end{array}\right]$.
-\\
-
-{\bf Be sure to circle your final answer for each part below.}
-\\
-
-a) [2pts] What is $p_{32}(2)$?
-\vspace{0.6in}
-
-b) [2pts] If the system is observed to be in state 1 on the first observation, what's the probability it will be in state 3 on the fourth observation?
-\vspace{0.6in}
-
-c) [1pt] Is this Markov chain regular?
-\vspace{0.6in}
-
-d) [5pts] If the state vector on observation 1 is $\left[\begin{array}{ccc} \frac{1}{2} & \frac{1}{2} & 0 \end{array}\right]$, what's the state vector for observation 3?
-
-
-
-
-\item 
-A Markov chain has the transition matrix\quad
-$$P=\begin{bmatrix}0.6 &0.4\\
-0.2 &0.8
-\end{bmatrix}.$$
-If the chain is observed to be in state 2 now, what is the
-probability that two observations later it will be
-in state 1?
-$$\begin{array}{lll}
-(a) \quad 0.44  &(b) \quad 0.24  &(c) \quad 0.28  \\
-\\
-(d) \quad 0.56 &(e) \quad 0.40 & (f) \quad 0.72 \\
-\\
-\multicolumn{3}{l}{(g)\quad \mbox{None of the above.}} \end{array}$$
-
-
-
-
-\item  
-Find the vector of stable probabilities for the transition matrix
-below:
-$
-\begin{bmatrix} 
-\frac{1}{2} & \frac{1}{2} \\
- 1& 0
-\end{bmatrix}$
-
-$$\begin{array}{lll}
-(a) \quad \ds{\begin{bmatrix} \frac{1}{3} &\frac{2}{3} \end{bmatrix}}
-&
-(b)\quad \ds{\begin{bmatrix} \frac{1}{2} &\frac{1}{2}\end{bmatrix}}
-&
-(c) \quad  \ds{\begin{bmatrix} -\frac{2}{3}& \frac{1}{3} \end{bmatrix}}\\
-\\
-(d) \quad \ds{\begin{bmatrix} -\frac{2}{3} &\frac{4}{3} \end{bmatrix}}
-&
-(e) \quad \ds{\begin{bmatrix} \frac{2}{3}& \frac{1}{3} \end{bmatrix}}
-&
-(f) \quad \ds{\begin{bmatrix} \frac{3}{2}& \frac{1}{2}\end{bmatrix}}\\
-\\
-\multicolumn{3}{l}{(g)\quad \mbox{None of the above.}}\end{array}$$
-
-
-
-\item   
-Suppose that $P=\begin{bmatrix}
-{\frac{1}{3}} & {\frac{2}{3}} & 0 \\[0.3em]
-{\frac{1}{6}} & {\frac{1}{3}} & {\frac{1}{2}} \\[0.3em]
-{\frac{1}{4}} & {\frac{1}{4}} & {\frac{1}{2}} \end{bmatrix}$ 
-is the transition matrix for a Markov chain.
-If the system starts in 
-\smallskip
-
-state 1, what state is it most likely to be in
-on the next observation?
-$$\begin{array}{lll}
-(a) \quad 0  &(b) \quad 1 &(c) \quad 2 \\
-\\
-(d) \quad 3  &(e) \quad 4 &(f) \quad 5 \\
-\\
-\multicolumn{3}{l}{(g)\quad \mbox{None of the above.}} \end{array}$$
-
-
-
-\item 
-What are the values of $x$, $y$, and $z$ in the given
-transition diagram?
-
-\transitionDia3{0.4}{0.4}{x}{0.2}{0.3}{z}{0.5}{y}{0.5}
-
-
-
-
-\item 
-Which of the following gives the probability that a Markov
-chain which is in state 1 on the first observation will be in state 2
-on the fourth observation? 
- $$\begin{array}{lll}
- (a) \quad p_{21}(3) & (b) \quad p_{12}(3) & (c) \quad p_{12}(4) \\
- \\
- (d) \quad p_{21}(4) & (e) \quad p_{13}(2) & (f) \quad p_{13}(4) \\
- \\
- \multicolumn{3}{l}{(g)\quad \mbox{None of the above.}} \end{array}
- $$
-
-
-\item 
-A Markov chain has the transition matrix 
-$P = \left[\begin{array}{ccc} 
-0.7 & 0.1 & 0.2 \\ 
-0.3 & 0.7 & 0 \\ 
-1 & 0 & 0 
-\end{array}\right]$. 
-For this matrix, 
-\newline $P(2) = \left[\begin{array}{ccc} 
-0.72 & 0.14 & 0.14 \\ 
-0.42 & 0.52 & 0.06 \\ 
-0.70 & 0.10 & 0.20 
-\end{array}\right]$ 
-and $P(3) = \left[\begin{array}{ccc} 
-0.686 & 0.17 & 0.144 \\ 
-0.51 & 0.406 & 0.084 \\ 
-0.72 & 0.14 & 0.14 
-\end{array}\right]$.
-\\
-
-{\bf Be sure to circle your final answer for each part below.}
-\\
-
-a) [2pts] What is $p_{32}(2)$?
-\vspace{0.6in}
-
-b) [2pts] If the system is observed to be in state 1 on the first observation, what's the probability it will be in state 3 on the fourth observation?
-\vspace{0.6in}
-
-c) [1pt] Is this Markov chain regular?
-\vspace{0.6in}
-
-d) [5pts] If the state vector on observation 1 is $\left[\begin{array}{ccc} \frac{1}{2} & \frac{1}{2} & 0 \end{array}\right]$, what's the state vector for observation 3?
-
-
-\item
-Two roommates play a game together every night.  They own three games,
-Monopoly, Blokus, and Chess, and they never play the same game two
-nights in a row.  If they play Monopoly one night they are three times as
-likely to play Blokus as to play Chess the following night.  If they
-play Blokus one night they are equally likely to play Monopoly as to
-play Chess the following night.  If they play Chess one night they are
-five times as likely to play Monopoly as to play Blokus the following
-night.  If we think of this as a Markov chain, with the first state
-being Monopoly, the second state being Blokus, and the third state
-being Chess, what is the transition matrix $P$?
-
-
-
-\item Which of the following is the transition matrix that
-corresponds to the given transition diagram?
-
-\transitionDia3{0.1}{0}{0.9}{0.3}{0.2}{0.5}{0}{1}{0}
-
-
-
-\item 
-A Markov chain has the transition matrix\quad
-$$P=\begin{bmatrix}0.6 &0.4\\
-0.2 &0.8
-\end{bmatrix}.$$
-If the chain is observed to be in state 2 now, what is the
-probability that two observations later it will be
-in state 1?
-$$\begin{array}{lll}
-(a) \quad 0.44  &(b) \quad 0.24  &(c) \quad 0.28  \\
-\\
-(d) \quad 0.56 &(e) \quad 0.40 & (f) \quad 0.72 \\
-\\
-\multicolumn{3}{l}{(g)\quad \mbox{None of the above.}} \end{array}$$
---]]

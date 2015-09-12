@@ -7,7 +7,7 @@ local function parens( t, op, expr )
    if t == op or t == '' or t == 'c' then
       res = expr
    else 
-      res = '( ' .. expr .. ' )'
+      res = '(' .. expr .. ')'
    end
    return res
 end 
@@ -20,7 +20,7 @@ function Venn:__add( vn )
    function res:__tostring()
       local left = parens( ts, 'u', this:__tostring() )
       local right = parens( to, 'u', vn:__tostring() )
-      return  left .. [[ u ]] .. right
+      return  left .. [[u]] .. right
    end 
    function res:tolatex()
       local left = parens( ts, 'u', this:tolatex() )
@@ -38,7 +38,7 @@ function Venn:__unm(  )
    local res = {}
    local this = self
    function res:__tostring()
-      return parens( this.top, '', this:__tostring() ) .. [[']]
+      return parens( this.top, '', this:__tostring() ) .. [[!]]
    end 
    function res:tolatex()
       return parens( this.top, '', this:tolatex() ) .. [[']]
@@ -58,7 +58,7 @@ function Venn:__mul( vn )
    function res:__tostring()
       local left = parens( ts, 'n', this:__tostring() )
       local right = parens( to, 'n', vn:__tostring() )
-      return  left .. [[ n ]] .. right
+      return  left .. [[n]] .. right
    end 
    function res:tolatex()
       local left = parens( ts, 'n', this:tolatex() )
@@ -73,7 +73,7 @@ function Venn:__mul( vn )
 end 
 
 function Venn:filename()
-   return self.dir .. self.name
+   return self.dir .. self:__tostring()
 end 
 
 
@@ -92,7 +92,7 @@ function Venn:initMaxima()
    m:exec( [[ c3c:[0,-r*rco] ]] )
    m:exec( [[ c1(x,y):=(x-c1c[1])^2+(y-c1c[2])^2  ]] )
    m:exec( [[ c2(x,y):=(x-c2c[1])^2+(y-c2c[2])^2  ]] )
-   m:exec( [[ c3(x,y):=(x-c3c[1])^2+(y-c3c[2])^2  ]] )
+   m:exec( [[ c3(x,y):=(x-c3c[1])^2+(y-c3c[2])^2  ]] );
    m:exec( [[ drawVenn(atxt,btxt,ctxt,setexpr):=draw2d(
 fill_color = "gray",
 x_voxel = vxs, y_voxel = vxs,
@@ -105,27 +105,55 @@ xtics = false,ytics = false,
 transparent = true, 
 rectangle(rect[1],rect[2]),
 circle(c1c,r),circle(c2c,r),circle(c3c,r),
-color = black,font="jsMath-cmmi",font_size=72,
-lbl(atxt,clb*c1c),lbl(btxt,clb*c2c),lbl(ctxt,clb*c3c)) ]] )
+color = black,font="jsMath-cmmi",font_size=24,
+lbl(atxt,clb*c1c),lbl(btxt,clb*c2c),lbl(ctxt,clb*c3c)) ]] );
+   m:exec( [[ drawVennEmpty(atxt,btxt,ctxt):=draw2d(
+fill_color = "gray",
+x_voxel = vxs, y_voxel = vxs,
+xrange = [-6,6],
+yrange = [-6,6], 
+axis_top = false,axis_bottom = false,
+axis_left = false,axis_right = false,
+xtics = false,ytics = false,
+transparent = true, 
+rectangle(rect[1],rect[2]),
+circle(c1c,r),circle(c2c,r),circle(c3c,r),
+color = black,font="jsMath-cmmi",font_size=24,
+lbl(atxt,clb*c1c),lbl(btxt,clb*c2c),lbl(ctxt,clb*c3c)) ]] );
    sleep(2)
 end
 
-function Venn:maxGraph( vn )
+function Venn:maxGraph(  )
+   empty = empty or false
    local m = self.max
-   m:exec( 'drawVenn', 
-	   m.quote(self.sets[1]), 
-	   m.quote(self.sets[2]), 
-	   m.quote(self.sets[3]), 
-	   vn:tomaximaregion() )
-   sleep(1)
-end 
-   
+   local region = self:tomaximaregion()
+   if region then
+      m:exec( 'drawVenn', 
+              m.quote(self.sets[1]), 
+              m.quote(self.sets[2]), 
+              m.quote(self.sets[3]), 
+              region )
+      sleep(5)
+   else
+      m:exec( 'drawVennEmpty', 
+              m.quote(self.sets[1]), 
+              m.quote(self.sets[2]), 
+              m.quote(self.sets[3]) )
+      sleep(5)
+   end
+end
+
 function Venn:saveGraph()
    self.max:saveGraph( self )
+   sleep(4)
 end 
 
 function Venn:tolatexpic()
-   self.max:tolatexpic( self )
+   local frm = [[\includegraphics[scale=%s,trim=4 4 4 4,clip=true]{%s}]]
+   local file = self:filename() .. '.png'
+   local scale = self.scale
+   return frm:format( scale, file )
+end 
 
 function Venn:newSimple( n )
    local res = {}
@@ -140,7 +168,20 @@ function Venn:newSimple( n )
    end 
    res.top = ''
    return setmetatable( res, Venn )
+end
+
+vennEmpty = {}
+function vennEmpty:__tostring()
+   return '0'
 end 
+function vennEmpty:tolatex()
+   return [[ \emptyset ]]
+end 
+function vennEmpty:tomaximaregion()
+   return false
+end 
+vennEmpty.top = ''
+setmetatable( vennEmpty, Venn )
 
 -- function Venn:new( code )
 --    local res = {}
