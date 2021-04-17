@@ -24,10 +24,10 @@ votingCalcPRC = mp:new(
 
    function( self, q )
       q = q or math.random( 4 )
-      local systemLst = { "Plurality", "Hare", "Condorcet", "Borda Count"}
+      local systemLst = { "Plurality", "Hare (or equivalently Plurality with Runoff)", "Condorcet", "Borda Count"}
       system = systemLst[ q ]
       local at, bt, ct = distinctSummands( 3, 100 )
-      while math.min( at, bt, ct, 100 - at, 100 - bt, 100 - ct ) < 15 do
+      while math.max( at, bt, ct ) > 45 do
 	 at, bt, ct = distinctSummands( 3, 100 )
       end
       abc = math.random( at - 1 )
@@ -175,104 +175,6 @@ function borda( abc, acb, bac, bca, cab, cba, ptlst )
 end
 
 
--- function fairnessViolations( block )
---    oldorder = {false,false,false,false,false}
---    neworder = {false,false,false,false,false}
---    local newprof = {1,2,3}
---    local rnd1 = math.random(0,1)
---    local posa = 3 - 2 * rnd1
---    local posx, posy = 1 + rnd1, 2 + rnd1
---    newprof[ posx ], newprof[ posy ] = newprof[ posy ], newprof[ posx ] 
---    local mono, iia = randBool(), randBool()
---    local ansstr = ''
---    if not mono then
---       ansstr = 'Mono '
---    end
---    if not iia then
---       ansstr = ansstr .. 'IIA'
---    end
---    if ansstr == '' then
---       ansstr = 'Neither'
---    end
---    appendAns( ansstr )
-
---    if not mono then
---       oldorder[2], oldorder[4] = newprof[ posx ], newprof[ posy ]
---       neworder[2], neworder[4] = posx, posy
---       if iia then
--- 	 local place = 1 + 4 * math.random(0,1)
--- 	 oldorder[ place ], neworder[ place ] = posa, posa
---       else
--- 	 local place1, place2 = 1, 1
--- 	 while ( place1 == 1 and place2 == 1 ) or (place1 == 5 and place2 == 5) do
--- 	    place1, place2 = 1 + 2 * math.random(0,2), 1 + 2 * math.random(0,2)
--- 	 end
--- 	 oldorder[ place1 ], neworder[ place2 ] = posa, posa
---       end
---    else
---       local switch, alpha = randBool(), randBool()
---       if switch then
--- 	 oldorder[2], oldorder[4] = posx, posy
--- 	 neworder[2], neworder[4] = newprof[ posx ], newprof[ posy ]
---       else
--- 	 if alpha then
--- 	    oldorder[2], oldorder[4] = posx, posy
--- 	    neworder[2], neworder[4] = posx, posy
--- 	 else
--- 	    oldorder[2], oldorder[4] = posy, posx
--- 	    neworder[2], neworder[4] = posy, posx
--- 	 end
---       end
---       if iia then
--- 	 if switch then
--- 	    local place = 1 + 4 * math.random(0,1)
--- 	    oldorder[ place ], neworder[ place ] = posa, posa
--- 	 else
--- 	    local place = 1 + 2 * math.random(0,2)
--- 	    oldorder[ place ], neworder[ place ] = posa, posa
--- 	 end
---       else
--- 	 if switch then
--- 	    local place1, place2 = 1, 1
--- 	    while ( place1 == 1 and place2 == 1 ) or (place1 == 5 and place2 == 5) do
--- 	       place1, place2 = 1 + 2 * math.random(0,2), 1 + 2 * math.random(0,2)
--- 	    end
--- 	    oldorder[ place1 ], neworder[ place2 ] = posa, posa
--- 	 else
--- 	    local place1, place2 = 1, 1
--- 	    while ( place1 == place2 ) do
--- 	       place1, place2 = 1 + 2 * math.random(0,2), 1 + 2 * math.random(0,2)
--- 	    end
--- 	    oldorder[ place1 ], neworder[ place2 ] = posa, posa
--- 	 end
---       end
---    end
-
---    local tmpl = [[ 
--- Three candidates \(A\), \(B\), and \(C\) are running for
--- office, and there is one block of voters, 
--- the %ss,
--- who all favor the ranking \(ABC\). 
--- If the election were held today
--- under the Iksworbad Voting System  the
---    result would be the social ranking \(%s%s%s\).
-
--- Now suppose that some of the %s block of voters are thinking about
--- changing their preferred ranking to \(%s%s%s\).  
--- If the vote were held under the Iksworbad system with {\em only} those
--- changes in the voters' profile, then the resulting social ranking
--- would be \(%s%s%s\).
-
--- Based on only these two examples, does the Iksworbad system
--- necessarily violate Monotonicity, Independence of Irrelevant
--- Alternatives, both, or neither? 
--- ]]
---    local sublst = {}
---    listConcat( sublst, { block }, oldorder, { block }, newprof, neworder )
---    sublst =  map( pruneList( sublst ), numToUpper )
---    local latex = string.format( tmpl, table.unpack( sublst ) )
---    return latex 
--- end 
 
 fairnessViolations = mp:new(
    [[ Three candidates \(A\), \(B\), and \(C\) are running for
@@ -286,7 +188,7 @@ under the @sys Voting System  the
 Now suppose that some of the @block block of voters are thinking about
 changing their preferred ranking to \( @np1 @np2 @np3 \).  
 If the vote were held under the @sys system with {\em only} those
-changes in the voters\' profile, then the resulting social ranking
+changes in the voters\'\ profile, then the resulting social ranking
 would be \( @nr1 @nr2 @nr3 \).
 
 Based on only these two examples, does the @sys system
@@ -294,8 +196,8 @@ necessarily violate Monotonicity, Independence of Irrelevant
 Alternatives, both, or neither? 
 ]],
    function( self, blockname, sysname )
-      block = blockname
-      sys = sysname
+      block = blockname or "Vacillator"
+      sys = sysname or "Iksworbad"
       local oldorder = {false,false,false,false,false}
       local neworder = {false,false,false,false,false}
       local newprof = {1,2,3}
@@ -421,82 +323,133 @@ system, with the specific agenda given below.
 )
 
 
-function strategicRunoff()
-   local tmpl = [[Three candidates, %s, %s, and %s, 
+strategicRunoff = mp:new(
+   [[ Three candidates, @a, @b, and @c, 
    are running for school board president, and the voters have the
    following profile.  
 
-   \voteProfileABC{%d}{%d}{%d}{%d}{%d}{%d}
+   \voteProfileABC{ @abc }{ @acb }{ @bac }{ @bca }{ @cab }{ @cba }
    Assuming the voting system is Plurality with a runoff, the winner
-   of the election would be %s {\em if the voters voted sincerely.}
+   of the election would be @firstw {\em if the voters voted sincerely.}
    Is there any way one of the other candidates might be able to
-   ``steal'' the election through strategic voting?  Explain how.]]
-   local cands = { 'Abercrombie', 'Bennett', 'Calhoun' }
-   local w, l, s = distinctRands( 3, 1, 3 )
-   local wname, lname, sname = cands[ w ], cands[ l ], cands[ s ]
-   local wt, lt, st = 32, 31, 37
-   local wlt = math.random( math.floor( wt/2 ) )
-   local wst = wt - wlt
-   local wsdiff = wt - st
-   local lst = math.random( math.floor( (lt + wsdiff)/2 ) )
-   local lwt = lt - lst
-   local swt = math.random( math.floor( st/2 ) )
-   local slt = st - swt
-   local tab = {}
-   tab[ w ], tab[ l ], tab[ s ] = { wt, {} }, { lt, {} }, { st, {} }
-   tab[ w ][2][w], tab[ w ][2][l], tab[ w ][2][s] = 0, wlt, wst
-   tab[ l ][2][w], tab[ l ][2][l], tab[ l ][2][s] = lwt, 0, lst
-   tab[ s ][2][w], tab[ s ][2][l], tab[ s ][2][s] = swt, slt, 0 
-   local abc, acb, bac, bca, cab, cba = tableToProfile( tab )
-   appendAns( sname .. ' gives 2 top votes to ' .. lname )
-   local sublst = listJoin( cands, 
-			    { abc, acb, bac, bca, cab, cba },
-			    { wname } )
-   return mklatex( tmpl, sublst )
-end 
+   ``steal'' the election through strategic voting?  Explain how.
+]],
+   function(self)
+      local cands = { 'Abercrombie', 'Bennett', 'Calhoun' }
+      a,b,c = table.unpack(cands)
+      local w, l, s = distinctRands( 3, 1, 3 )
+      local wname, lname, sname = cands[ w ], cands[ l ], cands[ s ]
+      firstw = wname
+      local wt, lt, st = 32, 31, 37
+      local wlt = math.random( math.floor( wt/2 ) )
+      local wst = wt - wlt
+      local wsdiff = wt - st
+      local lst = math.random( math.floor((lt + wsdiff)/2 - 1))
+      local lwt = lt - lst
+      local swt = math.random( math.floor( st/2 ) )
+      local slt = st - swt
+      local tab = {}
+      tab[ w ], tab[ l ], tab[ s ] = { wt, {} }, { lt, {} }, { st, {} }
+      tab[ w ][2][w], tab[ w ][2][l], tab[ w ][2][s] = 0, wlt, wst
+      tab[ l ][2][w], tab[ l ][2][l], tab[ l ][2][s] = lwt, 0, lst
+      tab[ s ][2][w], tab[ s ][2][l], tab[ s ][2][s] = swt, slt, 0 
+      abc, acb, bac, bca, cab, cba = tableToProfile( tab )
+      local ans = sname .. ' gives 2 top votes to ' .. lname
+      -- local sublst = listJoin( cands, 
+      --                          { abc, acb, bac, bca, cab, cba },
+      --                          { wname } )
+      return {ans}
+   end,
+   [[\chcLSixN]]
+)
 
 
-function strategicAgenda()
-   local tmpl = [[Three candidates, %s, %s, and %s, 
+strategicAgenda = mp:new(
+   [[ Three candidates, @a, @b, and @c, 
    are running for Student President, and the voters have the
    following profile.  
 
-   \voteProfileABC{%d}{%d}{%d}{%d}{%d}{%d}
+   \voteProfileABC{ @abc }{ @acb }{ @bac }{ @bca }{ @cab }{ @cba }
    Assuming the voting system is the Agenda shown below, the winner
-   of the election would be %s {\em if the voters voted sincerely.}
+   of the election would be @firstw {\em if the voters voted sincerely.}
    Is there any way one of the other candidates might be able to
    ``steal'' the election through strategic voting?  Explain how.
    \begin{center}
-     \agendaC{%s}{%s}{%s}{}{}
-     \end{center}]]
-     local cands = { 'Argle', 'Bargle', 'Cargle' }
-   local inits = { 'A', 'B', 'C' }
-   local w, l, s = distinctRands( 3, 1, 3 )
-   local wname, lname, sname = cands[ w ], cands[ l ], cands[ s ]
-   local wt, lt, st = 34, 33, 33
-   local wlt = math.random( math.floor( wt/2 ) - 1 )
-   local wst = wt - wlt
-   local lst = math.random( math.floor( lt/2 ) - 1 )
-   local lwt = lt - lst
-   local slt = math.random( math.floor( st/2 ) )
-   local swt = st - slt
-   local tab = {}
-   tab[ w ], tab[ l ], tab[ s ] = { wt, {} }, { lt, {} }, { st, {} }
-   tab[ w ][2][w], tab[ w ][2][l], tab[ w ][2][s] = 0, wlt, wst
-   tab[ l ][2][w], tab[ l ][2][l], tab[ l ][2][s] = lwt, 0, lst
-   tab[ s ][2][w], tab[ s ][2][l], tab[ s ][2][s] = swt, slt, 0 
-   local abc, acb, bac, bca, cab, cba = tableToProfile( tab )
-   appendAns( sname .. ' gives middle votes to ' .. lname )
-   local sublst = listJoin( cands, 
-			    { abc, acb, bac, bca, cab, cba },
-			    { wname },
-			    { inits[ w ], inits[ l ], inits[ s ] } )
-   return mklatex( tmpl, sublst )
-end
-   
+     \agendaC{ @ag1 }{ @ag2 }{ @ag3 }{}{}
+     \end{center}
+]],
+   function(self)
+      local cands = { 'Argle', 'Bargle', 'Cargle' }
+      a,b,c = table.unpack(cands)
+      local inits = { 'A', 'B', 'C' }
+      local w, l, s = distinctRands( 3, 1, 3 )
+      local wname, lname, sname = cands[ w ], cands[ l ], cands[ s ]
+      firstw = wname
+      local wt, lt, st = 34, 33, 33
+      local wlt = math.random( math.floor( wt/2 ) - 1 )
+      local wst = wt - wlt
+      local lst = math.random( math.floor( lt/2 ) - 1 )
+      local lwt = lt - lst
+      local slt = math.random( math.floor( st/2 ) )
+      local swt = st - slt
+      local tab = {}
+      tab[ w ], tab[ l ], tab[ s ] = { wt, {} }, { lt, {} }, { st, {} }
+      tab[ w ][2][w], tab[ w ][2][l], tab[ w ][2][s] = 0, wlt, wst
+      tab[ l ][2][w], tab[ l ][2][l], tab[ l ][2][s] = lwt, 0, lst
+      tab[ s ][2][w], tab[ s ][2][l], tab[ s ][2][s] = swt, slt, 0 
+      abc, acb, bac, bca, cab, cba = tableToProfile( tab )
+      ans = sname .. ' gives middle votes to ' .. lname
+      -- local sublst = listJoin( cands, 
+      --                          { abc, acb, bac, bca, cab, cba },
+      --                          { wname },
+      --                          { inits[ w ], inits[ l ], inits[ s ] } )
+      ag1, ag2, ag3 = inits[ w ], inits[ l ], inits[ s ]
+      return {ans}
+   end,
+   [[\chcLSixN]]
+)
 
+strategicBorda = mp:new(
+   [[ Three candidates, @a, @b, and @c, 
+   are running for Student President, and the voters have the
+   following profile.  
 
-
-
-
+   \voteProfileABC{ @abc }{ @acb }{ @bac }{ @bca }{ @cab }{ @cba }
+   Assume the voting system is Borda, and that
+ the winner
+   of the election would be @firstw {\em if the voters voted sincerely.}
+   Is there any way one of the other candidates might be able to
+   ``steal'' the election through strategic voting?  Explain how.
+]],
+   function(self)
+      local cands = { 'Able', 'Baker', 'Charlie' }
+      a,b,c = table.unpack(cands)
+      local inits = { 'A', 'B', 'C' }
+      local w, l, s = distinctRands( 3, 1, 3 )
+      local wname, lname, sname = cands[ w ], cands[ l ], cands[ s ]
+      firstw = wname
+      local wt, lt, st = 34, 33, 33
+      local wlt = math.random(3,7)
+      local wst = wt - wlt
+      local lst = math.floor( lt/2 ) + math.random(0,1)
+      local lwt = lt - lst
+      local slt = math.random(1,wlt-2)
+      local swt = st - slt
+      local tab = {}
+      tab[ w ], tab[ l ], tab[ s ] = { wt, {} }, { lt, {} }, { st, {} }
+      tab[ w ][2][w], tab[ w ][2][l], tab[ w ][2][s] = 0, wlt, wst
+      tab[ l ][2][w], tab[ l ][2][l], tab[ l ][2][s] = lwt, 0, lst
+      tab[ s ][2][w], tab[ s ][2][l], tab[ s ][2][s] = swt, slt, 0 
+      abc, acb, bac, bca, cab, cba = tableToProfile( tab )
+      ans = sname .. ' gives middle votes to ' .. lname
+      -- local sublst = listJoin( cands, 
+      --                          { abc, acb, bac, bca, cab, cba },
+      --                          { wname },
+      --                          { inits[ w ], inits[ l ], inits[ s ] } )
+      ag1, ag2, ag3 = inits[ w ], inits[ l ], inits[ s ]
+      return {ans}
+   end,
+   [[\chcLSixN]]
+)
+ 
 

@@ -49,7 +49,10 @@ lpSetupmcNote = [[ (Note that the natural constraints \(x
 lpSetup = mp:new(
    [[ Formulate the following word problem as a linear programming
    problem.  
-   Do {\em not} attempt to solve it! \\
+   Do {\em not} attempt to solve it!
+(Note that the natural constraints \(x
+   \geq 0,      y \geq 0,     z \geq 0 \), have been omitted from the
+   answers.) \\
    
    As a tobacco addict, you need at least @ex1 g (grams) of nicotine, 
    @ex2 g of tar, 
@@ -72,9 +75,7 @@ lpSetup = mp:new(
      z &=& \tx{\# bowls of pipe tobacco.}
      \end{array} \]
      
-   (Note: 1 g. = 1000 mg. Also, note that the natural constraints \(x
-   \geq 0,      y \geq 0,     z \geq 0 \), have been omitted from the
-   answers.)]],
+   (Note: 1 g. = 1000 mg.) ]],
 
    function( self )
       ex1,ex2,ex3 = distinctRands( 3, 1, 20 )
@@ -184,12 +185,17 @@ lpSetupSeuss = mp:new(
       fn1, fn2, fn3 = nameLst.fn1,  nameLst.fn2,  nameLst.fn3
       ex1,ex2,ex3 = distinctRands( 3, 1, 20 )
       ex1,ex2,ex3 = ex1/10,ex2/10,ex3/10
-      ex1lst = { ex1*1000, ex1 }
-      local mpm = mat.random( 3, 3, 30, false )
+      ex1 = ({ ex1, ex1*100 })[vn]
+      cex1 = ex1
+      if vn==1 then cex1 = 1000*ex1 end
+      -- local mpm = mat.random( 3, 3, 30, false )
       ob1,ob2,ob3 = distinctRands( 3, 1, 9 )
-      in11,in12,in13 = table.unpack( mpm[1] )
-      in21,in22,in23 = table.unpack( mpm[2] )
-      in31,in32,in33 = table.unpack( mpm[3] )
+      in11,in12,in13 = distinctRands( 3, 1, 30 )
+      in21,in22,in23 = distinctRands( 3, 1, 30 )
+      in31,in32,in33 = distinctRands( 3, 1, 30 )
+      local mpm = mat.new( {{in11,in12,in13},
+            {in21,in22,in23},
+            {in31,in32,in33}} )
       local anslst = {}
       for a,b,c in signIter( 'bbb' ) do
 	 local o1,o2,o3,t1,t2,t3, obj, rel
@@ -204,9 +210,9 @@ lpSetupSeuss = mp:new(
 	    obj = ({'max','min'})[vn]
 	 end 
 	 if c then
-	    o1,o2,o3,t1,t2,t3 = ob1,ob2,ob3,ex1lst[vn],ex2*1000,ex3*1000
+	    o1,o2,o3,t1,t2,t3 = ob1,ob2,ob3,cex1,ex2*1000,ex3*1000
 	 else 
-	    o1,o2,o3,t1,t2,t3 = ex1lst[vn],ex2*1000,ex3*1000,ob1,ob2,ob3
+	    o1,o2,o3,t1,t2,t3 = cex1,ex2*1000,ex3*1000,ob1,ob2,ob3
 	 end 
 	 table.insert( anslst, lpForm( obj, rel, 
 				       {o1,o2,o3}, mpm:transpose(), 
@@ -222,7 +228,7 @@ function randPt()
    local x = math.random( line.extent[1] + 2, line.extent[3] - 2 )
    local y = math.random( line.extent[2] + 2, line.extent[4] - 2 )
    return { x,y }
-end 
+end;
 
 lpGraph = mp:new(
    [[ Graph the given system of inequalities. \\
@@ -232,7 +238,6 @@ lpGraph = mp:new(
 {\rm II. }& @in2 \\
 {\rm III. }& @in3 \\
 \end{array} \) ]],
-
    function( self )
       local p1, p2 = randPt(), randPt()
       while p1[1] == p2[1] and p1[2] == p2[2] do
@@ -243,6 +248,12 @@ lpGraph = mp:new(
       while l1:contains( p3 ) do p3 = randPt() end
       local l2 = line.newFromPoints( p2, p3 )
       local l3 = line.newFromPoints( p3, p1 )
+      -- local xax = line.newFromPoints( {0,0}, {1,0} )
+      -- local yax = line.newFromPoints( {0,0}, {0,1} )
+      -- local righthp = hp.new( yax, 1 )
+      -- righthp.line.name = "right"
+      -- local upperhp = hp.new( xax, 1 )
+      -- upperhp.line.name = "upper"
       in1 = hp.new( l1, randSign() )
       in2 = hp.new( l2, randSign() )
       in3 = hp.new( l3, randSign() )
@@ -250,28 +261,52 @@ lpGraph = mp:new(
       in1.line.name = 'l1'
       in2.line.name = 'l2'
       in3.line.name = 'l3'
-
       --local xax, yax = line.new( 0, 1, 0 ), line.new( 1, 0, 0 )
       --xax.name, yax.name = '', ''
       --local xnat, ynat = hp.new( yax, 1), hp.new( xax, 1 )
       --hp.maxGraph( in1,in2,in3,xnat, ynat)
       local anslst = {}
-      for a,b,c in signIter( 3 ) do
-	 local i1, i2, i3 = in1:clone(), in2:clone(), in3:clone()
-	 --local nx, ny = xnat:clone(), ynat:clone()
-	 i1.sign, i2.sign, i3.sign = a*i1.sign, b*i2.sign, c*i3.sign
-	 if hp.cons3( i1, i2, i3 ) then
-	    --nx.sign, ny.sign = a*nx.sign, b*ny.sign
-	    i1.line.name, i2.line.name, i3.line.name = 
-	       'l1' .. a, 'l2' .. b, 'l3' .. c
-	    --nx.line.name, ny.line.name = 'x' .. a, 'y' .. b
-	    hp.saveGraph( i1, i2, i3 )
-	    table.insert( anslst, hp.tolatexpic( i1, i2, i3 ) )
-	 end 
+      if (self.mcP) then
+         for a,b,c in signIter( 3 ) do
+            local i1, i2, i3 = in1:clone(), in2:clone(), in3:clone()
+            --local nx, ny = xnat:clone(), ynat:clone()
+            i1.sign, i2.sign, i3.sign = a*i1.sign, b*i2.sign, c*i3.sign
+            if hp.cons3( i1, i2, i3 ) then
+               --nx.sign, ny.sign = a*nx.sign, b*ny.sign
+               i1.line.name, i2.line.name, i3.line.name = 
+                  'l1' .. a, 'l2' .. b, 'l3' .. c
+               --nx.line.name, ny.line.name = 'x' .. a, 'y' .. b
+               hp.saveGraph( i1, i2, i3 )
+sleep( 3 );
+               table.insert( anslst, hp.tolatexpic( i1, i2, i3 ) )
+            end 
+         end
+      else
+         local i1, i2, i3 = in1:clone(), in2:clone(), in3:clone()
+         if hp.cons3( i1, i2, i3 ) then
+            i1.line.name, i2.line.name, i3.line.name = 'l1', 'l2', 'l3'
+            hp.saveGraph( i1, i2, i3 )
+sleep( 3 );
+            table.insert( anslst, hp.tolatexpic( i1, i2, i3 ) )
+         end
       end
+
+      -- if hp.cons3( righthp, i2, i3 ) then
+      --    hp.saveGraph( righthp, i2, i3 )
+      --    sleep( 3 );
+      --    table.insert( anslst, hp.tolatexpic( righthp, i2, i3 ) )
+      -- end
+      -- if hp.cons3( i1, upperhp, i3 ) then
+      --    hp.saveGraph( i1, upperhp, i3 )
+      --    sleep( 3 );
+      --    table.insert( anslst, hp.tolatexpic( i1, upperhp, i3 ) )
+      -- end
+
+      
       local d1 = in1:clone()
       d1.sign = -d1.sign
       hp.saveGraph( d1, in2 )
+sleep( 3 );
       table.insert( anslst, hp.tolatexpic( d1, in2 ) )	 
       return anslst
    end
@@ -295,7 +330,7 @@ corner points algebraically!
  
 \begin{figure}[!h]
 
-\includegraphics[scale=.4]{/home/dabrowsa/teach/d117/fig/ex7-fs-corners-0}
+\includegraphics[scale=.4]{/home/dabrowsa/teach/d117/img/ex7-fs-corners-gray}
 
 \end{figure}
 
@@ -342,17 +377,18 @@ end
 line.extent = { -3, -3, 8, 8 }
 
 lpSolve = mp:new(
-   [[ Shown in the diagram is a @kind feasible set
+   [[ Shown in the diagram is @art @kind feasible set
    formed by @numlines inequalities.
    The corners of
    the feasible set are all points with integer coordinates. Find the
    {\em locations}, i.e.\ the \(xy\)-coordinates, of the max and min 
-   of the objective function @obj on the feasible set. \\
+   of the objective function @obj on this feasible set. \\
 
    @diagram ]],
    -- q=1 => bounded, q=2 => unbounded
    function( self, q )
       kind = ({ 'bounded', 'unbounded' })[ q ]
+      art = ({ 'a','an' })[q]
       numlines = ifset( q==1, 4, 3 )
       local cx, cy = 2, 2
       local x1,y1,x2,y2 = table.unpack( line.extent )
@@ -398,18 +434,23 @@ lpSolve = mp:new(
 	 open = 'l'
       end
       hp.saveGraph( table.unpack( ineqlst ) )
-      diagram = hp.tolatexpic( table.unpack( ineqlst ) )
-      local ox, oy = distinctRands( 2, -9, 9 )
-      obj = [[\( ]] .. ox .. 'x + ' .. oy .. [[y \)]]
-      obj = polyToStr( obj )
-      local function val(p)
-	 return ox * p[1] + oy * p[2]
-      end
-      local function ord( a, b )
-	 return val( a ) < val( b )
-      end 
-      local ordpts = { a, b, c, d }
-      table.sort( ordpts, ord )
+sleep( 3 );
+      diagram = hp.tolatexpic( table.unpack( ineqlst ) );
+      local ordpts
+      repeat
+         local ox, oy = distinctRands( 2, -9, 9 )
+         obj = [[\( ]] .. ox .. 'x + ' .. oy .. [[y \)]]
+         obj = polyToStr( obj )
+         local function val(p)
+            return ox * p[1] + oy * p[2]
+         end
+         local function ord( a, b )
+            return val( a ) < val( b )
+         end 
+         ordpts = { a, b, c, d }
+         table.sort( ordpts, ord )
+      until val( ordpts[1] ) < val( ordpts[2] ) and val( ordpts[3] ) < val( ordpts[4] );
+      
       local anstmpl = [[ \(\begin{array}{rl}
         \tx{max: }& %s \\
         \tx{min: }& %s 

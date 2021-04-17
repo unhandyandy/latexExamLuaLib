@@ -123,6 +123,8 @@ matMultNum = mp:new(
 
 matMult = mp:new( 
    [[ Find the following matrix product.
+Be careful to distinguish \(2\times 2\) matrices in the answers from 
+   \(2\times 1\) matrices.  
    \[ %s %s \] ]],
    function( self )
       local m1 = mat.random( 2, 2, 5 )
@@ -268,7 +270,7 @@ setupAugMat = mp:new(
 	       ans4:transpose(), ans3: transpose() }
       anslst = map( anslst,
 		    function (x)
-		       return [[\(]].. x:tolatex(true) ..[[\)]]
+		       return [[\(]].. x:tolatex(true) ..[[\)]];
 		    end )
       return rndlst, anslst             
    end,
@@ -364,7 +366,7 @@ freey = mp:new(
      \phm0 & \phm0 & \phm0 & \phm0
    \end{bmat}\) ]],
    function()
-      local lst = vec.random( 3, 9 )
+      local lst = vec.random( 3, 29 )
       -- local anstmpl = [[\(\left\{\begin{array}{rcl}
       --     x &=& %dy + %d \\ 
       --     z &=& %d \\
@@ -392,16 +394,16 @@ freey = mp:new(
 
 freez = mp:new(
    [[\( \begin{bmat}{rrr|r}
-     1 & 0 & %d & %d \\
-     0 & 1 & %d & %d \\
+     1 & 0 & @l1 & @l2 \\
+     0 & 1 & @l3 & @l4 \\
      \phm0 & \phm0 & \phm0 & \phm0 
      \end{bmat} \)]],
    function()
-      local lst = vec.random( 4, 9 )
+      l1,l2,l3,l4 = distinctRands( 4, 1, 9 )
+      -- local lst = vec.new( {l1,l2,l3,l4} )
       --local anstmpl = [[\(x = %dz + %d \\ y = %dz + %d\)]]
-      local ans = freezSol:format( -lst[1], lst[2], -lst[3], lst[4] )
-      return lst, 
-             solutionList( ans, -lst[1], lst[2], -lst[3], lst[4] )
+      local ans = freezSol:format( -l1, l2, -l3, l4 )
+      return solutionList( ans, -l1, l2, -l3, l4 )
    end
 )
 --freez.mcP = true
@@ -577,6 +579,38 @@ inverseSolve = mp:new(
    end 
 )
 
+inverseSolveNonCom = mp:new(
+   [[ Solve the matrix equation
+      \[ X @amat = @bmat \] 
+      for \(X\).  ]],
+
+   function( self, d )
+      d = d or -1
+      local det = 0
+      while det ~= d  do
+	 amat = mat.random( 2, 2, 6, true )
+	 det = amat:determinant()
+      end 
+      local b1, b2, b3, b4 = distinctRands( 4, -3, 3 )
+      bmat = mat.new( {{ b1,b3 }, { b2,b4 }} )
+      local amatinv = amat:inverse()
+      local wronginv1 = amatinv:transpose()
+      local wronginv2 = amatinv:clone()
+      wronginv2[1][2], wronginv2[2][1] = -wronginv2[1][2], -wronginv2[2][1]
+      local wronginv3 = amatinv:clone()
+      local wronginv4 = det * amatinv:clone()
+      wronginv3[1], wronginv3[2] = wronginv3[2], wronginv3[1]
+      return { bmat * amatinv,
+	       bmat * wronginv1,
+	       bmat * wronginv2,
+	       bmat * wronginv3,
+               amatinv * bmat,
+	       wronginv1 * bmat, wronginv2 * bmat, wronginv3 * bmat,
+      	       amat * bmat, bmat * amat,
+               wronginv4 * bmat, bmat * wronginv4 }
+   end 
+)
+
 inverseSolveCalc = mp:new(
    [[ Solve the matrix equation
       \[ @amat X = @bmat \] 
@@ -615,16 +649,31 @@ inverseFind = mp:new(
    \[ @amat \] ]],
 
    function( self, size, det, max )
-      det = det or 1
-      size = size or 2
-      max = max or 6
-      local d = 0
-      while math.abs( d ) ~= det do
-	 amat = mat.random( size, size, max )
-	 d = amat:determinant()
-      end 
-      return amat:inverse()
-   end 
+         det = det or 1
+         size = size or 2
+         max = max or 6
+         local d = 0
+         while d ~= det do
+            amat = mat.random( size, size, max, true )
+            d = amat:determinant()
+         end
+         wmat = one/d * mat.random( size, size, max, true )
+         wamat = d *amat:inverse()
+         return { amat:inverse(),
+                  mat.transpose(amat:inverse()),
+                  (-1) * amat:inverse(),
+                  (-1) * mat.transpose(amat:inverse()),
+                  wamat,
+                  (-1) * wamat,
+                  wamat:transpose(),
+                  (-1) * wamat:transpose(),
+                  wmat,
+                  mat.transpose(wmat),
+                  (-1) * wmat,
+                  (-1) * mat.transpose(wmat)
+         }
+   end,
+   [[\qrowFour]]
 )
 
 linProd = mp:new(
@@ -873,11 +922,11 @@ leontievTM = mp:new(
 leontievTM.chcFun = [[\qrowTwo]]
 
 leontievXD = mp:new(
-   [[ A company that produces two goods has the following technology
+   [[ A company that produces two products has the following technology
    matrix. 
    \[ A = @tm \] 
    Suppose that the company plans to produce @x1 units of the first
-   product and @x2 units of the second.  What demand vector will the
+   product and @x2 units of the second.  What {\bf demand vector} will the
    company be able to satisfy? ]],
 
    function( self )
@@ -885,7 +934,8 @@ leontievXD = mp:new(
       local tm0, tmfrc, ps
       local ident = mat.identity(2)
       local det1, det2, det3 = zero, zero, zero
-      while d1 < 0 or d2 < 0 or det1*one==zero or det2*one==zero or det3*one==zero do
+      while d1 < 0 or d2 < 0 or det1*one==zero or det2*one==zero or
+      det3*one==zero or ( tm0[1][2] == 0 and tm0[2][1] == 0 ) do
 	 tm0 = mat.random( 2, 2, 4, false )
 	 tm = 1/10 * tm0
 	 tmfrc = one/10 * tm0
@@ -909,7 +959,7 @@ leontievXD = mp:new(
 	       (-tm) * ps }
    end 
 )
-leontievXD.chcFun = [[\qrowTwo]]
+leontievXD.chcFun = [[\qrowFour]];
 
 
 leontievDX = mp:new(
@@ -926,7 +976,8 @@ leontievDX = mp:new(
       tm = 1/10 * tm0
       local tmfrc = one/10 * tm0
       local d, dw1, dw2, zerofrac = 0,0,0,0*one
-      while d*one == zerofrac or dw1*one == zerofrac or dw2*one == zerofrac or d.numer > 2 do
+      while d*one == zerofrac or dw1*one == zerofrac or dw2*one ==
+      zerofrac or d.numer > 2 or ( tm0[1][2] == 0 and tm0[2][1] == 0 ) do
 	 tm0 = mat.random( 2, 2, 5, false )
 	 tm = 1/10 * tm0
 	 tmfrc = one/10 * tm0
@@ -936,7 +987,8 @@ leontievDX = mp:new(
       end 
       local inv = ( ident - tmfrc ):inverse()
       d1, d2 = distinctRands( 2, 1, 5 )
-      local dv = mat.new({{d1},{d2}})
+      local dv = mat.new({{d1},{d2}});
+local dvwrong = mat.new({{d2},{d1}});
       local invwr = tmfrc:inverse()
       local invw2 = ( ident + tmfrc ):inverse()
       --print( '\n submkfun about to return... \n' )
@@ -945,9 +997,15 @@ leontievDX = mp:new(
 	       dv - tm * dv, tm * dv,
 	       invw2 * dv, 
 	       dv - tm * dv,
-	       dv, dv - invwr * dv, dv - invw2 * dv }
+	       dv, dv - invwr * dv, dv - invw2 * dv,
+inv * dvwrong, invwr * dvwrong,
+	       dvwrong - tm * dvwrong, tm * dvwrong,
+	       invw2 * dvwrong, 
+	       dvwrong - tm * dvwrong,
+	       dvwrong, dvwrong - invwr * dvwrong, dvwrong - invw2 * dvwrong
+ };
    end 
-)
+);
 --leontievDX.mcP = true
 leontievDX.chcFun = [[\qrowTwo]]
 

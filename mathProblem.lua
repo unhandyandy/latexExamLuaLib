@@ -21,6 +21,30 @@ mathProblem.subFun = 'table'
 --    return ('%s'):format( self )
 -- 				   end } )
 
+function tprint (t, s)
+    for k, v in pairs(t) do
+        local kfmt = '["' .. tostring(k) ..'"]'
+        if type(k) ~= 'string' then
+            kfmt = '[' .. k .. ']'
+        end
+        local vfmt = '"'.. tostring(v) ..'"'
+        if type(v) == 'table' then
+            tprint(v, (s or '')..kfmt)
+        else
+            if type(v) ~= 'string' then
+                vfmt = tostring(v)
+            end
+            print(type(t)..(s or '')..kfmt..' = '..vfmt)
+        end
+    end
+end
+
+function lprint(l)
+   for i in l do
+      print(i)
+   end
+end
+
 function mathProblem:mkchc( lst ) 
    return randPerm( distinctElems( self.numberChoices, lst ) )
 end
@@ -64,6 +88,7 @@ function mathProblem:generate( ... )
    else 
       template = self.template
    end
+   print(template)
    --local env = copy( _ENV )
    --env.self = self
    --env.submkargs = {...}
@@ -79,10 +104,17 @@ function mathProblem:generate( ... )
    --    printTable( submkfun ) 
    -- end
    local subs, chcs = submkfun( self, ... )
+   if type(subs)=='table' then
+      tprint(subs)
+   else
+      print(subs)
+   end
+         
    --print( '\n submkfun returned \n' )
    --local subs, chcs = self:submaker( ... )
    if chcs == nil then self.subFun = 'self' end
    chcs = chcs or subs
+   --tprint(chcs)
    --if chcs == subs and self.mcP then subs = {} end
    if subs[1] and self.subFun == 'table' then
       latex = string.format( template, table.unpack( subs ) )

@@ -72,3 +72,6 @@ function conditionalTD2( tm, n1, n2 )
    end 
    return form:format( n1, n2, table.unpack( subs ) )
 end 
+
+
+

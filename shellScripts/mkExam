@@ -1,0 +1,8 @@
+#! /bin/bash
+# run lualatex on exam preamble, body,
+# and corresponding answer key
+
+rm /home/dabrowsa/math/maxima/plots/*.png
+
+lualatex --shell-escape --jobname="$1" "\input{preamble.tex} \input{$1_body.tex}" && lualatex --shell-escape --jobname="$1_key" "\input{preamble.tex} \begin{document} \input{$1_Answers.tex} \end{document}"
+

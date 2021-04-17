@@ -1,0 +1,8 @@
+#! /bin/bash
+# open exam and key in evince
+
+evince $1.pdf &
+evince $1_key.pdf  &
+
+
+ 

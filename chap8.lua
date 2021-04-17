@@ -1,4 +1,4 @@
--- -*-two-mode-*-
+-- -*-lua-*-
 
 frc = require('fraction')
 vec = require('vector')
@@ -7,14 +7,14 @@ line = require('line')()
 max = require('maxima')
 line.max = max.new()
 line:initMaxima()
---line.dir = '/home/dabrowsa/math/maxima/plots/'
---line.scale = .4
+line.dir = '/home/dabrowsa/math/maxima/plots/'
+line.scale = .4
 
 mat = require('matrix')
 
 mp = require('mathProblem')
 mp.chcFun = [[\qrowFour]]
-mp.numberChoices = 6
+-- mp.numberChoices = 8
 mp.mcP = true
 
 ef = require('enumForm')
@@ -34,7 +34,7 @@ function mkpdesc( s1, s2, dt )
 end 
 
 pMeaning = mp:new(
-   [[ Suppose that a Markov chain with transition matrix \(P\)
+   [[ Suppose that a Markov chain with @numstates states and with transition matrix \(P\)
    is in state @stinit on the @t1ord
    observation.  Which of the following expressions represents the
    probability that it will be in state @stlast on the @t2ord
@@ -43,6 +43,7 @@ pMeaning = mp:new(
    function ( self )
       local t1 = math.random( 1, 5 )
       stinit, stlast, tdel = distinctRands( 3, 1, 5 )
+      numstates = math.max(stinit, stlast)
       local t2 = t1 + tdel
       t1ord, t2ord = getOrdinal( t1 ), getOrdinal( t2 )
       return { mkpdesc( stinit, stlast, tdel ),
@@ -56,7 +57,7 @@ pMeaning = mp:new(
 	       mkpdesc( stinit, t1, t2 ),
 	       mkpdesc( stlast, t2, t1 ) }
    end,
-   [[\qrowFour]]
+   [[\qrowTwo]]
 )
 
 
@@ -122,14 +123,16 @@ mcSequence = mp:new(
    @s3 on the following observation?  ]],
 
    function( self )
-      tm = randTrans( 4, 6 )
+      tm = randTrans( 4, 8 )
       s1, s2, s3 = distinctRands( 3, 1, 4 )
       return { tm[ s1 ][ s2 ] * tm[ s2 ][ s3 ],
 	       tm[ s2 ][ s1 ] * tm[ s3 ][ s2 ],
 	       tm[ s1 ][ s2 ] * tm[ s1 ][ s3 ],
 	       tm[ s2 ][ s1 ] * tm[ s3 ][ s1 ],
+	       tm[ s2 ][ s3 ] * tm[ s3 ][ s1 ],
+	       tm[ s2 ][ s1 ] * tm[ s1 ][ s3 ],
 	       tm[ s1 ][ s3 ] * tm[ s2 ][ s1 ],
-	       tm[ s1 ][ s3 ], tm[ s1 ][ s2 ], tm[ s3 ][ s1 ],
+	       tm[ s1 ][ s3 ], tm[ s1 ][ s2 ], tm[ s3 ][ s1 ], tm[ s2 ][ s1 ],
 	       one * 0, one,
 	       frc.random( one/12, one * 11/12 ),
 	       frc.random( one/12, one * 11/12 ),
@@ -168,9 +171,9 @@ regular = mp:new(
 	 table.insert( anslst, curans )
       end
       return anslst
-   end 
+   end,
+   [[\qrowFour]]
 )
-regular.chcFun = [[\qrowEight]]
 
 
 stateVecWrite = mp:new(
@@ -216,7 +219,8 @@ stateVecWrite = mp:new(
 	 table.insert( anslst, cur )
       end 
       return anslst
-   end
+   end,
+   [[\qrowTwo]]
 )
 
 stateVecProject = mp:new(
@@ -259,7 +263,7 @@ stateVecProject = mp:new(
 	       0.01 * math.random(100) }
    end 
 )
---stateVecProject.chcFun = [[\chcSix]]
+-- stateVecProject.chcFun = [[\chcSix]]
 
 
 function stable( tm )
@@ -304,7 +308,7 @@ stableFind = mp:new(
 	 tm = randTM( size, 4 )
 	 test = not tm:isregular() or tm[1] == tm[2]
       end 
-      return { stable( tm ), mkRandSeq( 30, randProbVec, size ) }
+      return { stable( tm ), mkRandSeq( 40, randProbVec, size ) }
    end 
 )
 
@@ -406,7 +410,7 @@ function normalizeVec( v )
 end
 
 tmFind = mp:new(
-   [[ Two roommates play a game together every night.  They own three
+   { [[ Two roommates play a game together every night.  They own three
    games, Monopoly, Blokus, and Chess, and they never play the same
    game two nights in a row.  If they play Monopoly one night they are
    @r123    likely to play Blokus as to play Chess the following
@@ -417,6 +421,19 @@ tmFind = mp:new(
    Markov chain, with the first state being Monopoly, the second state
    being Blokus, and the third state being Chess, what is the
    transition matrix \(P\)? ]] ,
+      [[ A Dinner Club goes out to eat once a week.  It visits three kinds of
+   restaurants, Asian, Mediterranean, and Mexican, but they never visit the same
+   type of restaurant two weeks in a row.
+If they go to an Asian restaurant one week then they are @r123 likely to go to a
+   Mediterranean as a Mexican the next week.
+If they go to a Mediterranean restaurant one week then they are @r213 likely to
+   to go to an Asian as a Mexican the next week.
+If they go to a Mexican restaurant one week then they are @r312 likely to go to
+   an Asian as a Mediterranean the next week.
+If we think of this as a Markov Chain in which state 1 is Asian, state 2 is
+   Mediterranean, and state 3 is Mexican, then what is the transition matrix?
+]]
+   },
 
    function( self )
       local rats = { distinctRands( 3, 1, 3 ) }

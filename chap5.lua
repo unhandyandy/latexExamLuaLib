@@ -50,7 +50,7 @@ findSlopeHV = mp:new(
 	 var = 'y' 
 	 ans = one * 0
       end
-      local coef = randSign() * math.random( 15 )
+      local coef = randSign() * math.random( 2, 15 )
       costr = coeffToStr( coef )
       cons = math.random( -15, 15 )
       return  { ans, 'undefined', one * 0,
@@ -94,6 +94,10 @@ writeLinEq = mp:new(
 		    ans:format( - xco, m.denom,  - consw1 ),
 		    ans:format( - xco, m.denom,  consw2 ),
 		    ans:format( m.denom, m.numer, consw2 ),
+		    ans:format( m.denom, - xco, consw1 ),
+		    ans:format(  m.denom, - xco, - consw1 ),
+		    ans:format(  m.denom, - xco, consw2 ),
+		    ans:format( m.numer, m.denom, consw2 ),
 		    ans:format( m.denom, m.numer, cons ),
 		    ans:format( - m.denom, m.numer, consw3 ),
 		    ans:format( - m.denom, m.numer, - consw3 ),
